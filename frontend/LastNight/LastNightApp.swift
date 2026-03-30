@@ -1,17 +1,25 @@
-//
-//  LastNightApp.swift
-//  LastNight
-//
-//  Created by Sydney Patel on 3/30/26.
-//
-
 import SwiftUI
+import FirebaseCore
+import GoogleSignIn
 
 @main
 struct LastNightApp: App {
+    @StateObject private var appState = AppState()
+
+    init() {
+        FirebaseApp.configure()
+        
+        // Configure Google Sign-In with client ID from plist
+        if let clientID = FirebaseApp.app()?.options.clientID {
+            let config = GIDConfiguration(clientID: clientID)
+            GIDSignIn.sharedInstance.configuration = config
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environmentObject(appState)
         }
     }
 }
