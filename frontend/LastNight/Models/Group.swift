@@ -11,7 +11,6 @@ struct Group: Codable, Identifiable {
     let isActive: Bool
     let inviteCode: String
     let createdAt: Date
-    // Joined from query
     var memberCount: Int?
     var photoCount: Int?
     var role: MemberRole?
@@ -39,5 +38,33 @@ struct Group: Codable, Identifiable {
         case memberCount = "member_count"
         case photoCount = "photo_count"
         case role
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        timezone = try c.decode(String.self, forKey: .timezone)
+        coverPhotoUrl = try c.decodeIfPresent(String.self, forKey: .coverPhotoUrl)
+        createdBy = try c.decode(String.self, forKey: .createdBy)
+        unlockMode = try c.decode(UnlockMode.self, forKey: .unlockMode)
+        unlockAt = try c.decodeIfPresent(Date.self, forKey: .unlockAt)
+        isActive = try c.decode(Bool.self, forKey: .isActive)
+        inviteCode = try c.decode(String.self, forKey: .inviteCode)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        role = try c.decodeIfPresent(MemberRole.self, forKey: .role)
+
+        // Postgres returns COUNT() as String — handle both
+        if let intVal = try? c.decodeIfPresent(Int.self, forKey: .memberCount) {
+            memberCount = intVal
+        } else if let strVal = try? c.decodeIfPresent(String.self, forKey: .memberCount) {
+            memberCount = Int(strVal)
+        }
+
+        if let intVal = try? c.decodeIfPresent(Int.self, forKey: .photoCount) {
+            photoCount = intVal
+        } else if let strVal = try? c.decodeIfPresent(String.self, forKey: .photoCount) {
+            photoCount = Int(strVal)
+        }
     }
 }

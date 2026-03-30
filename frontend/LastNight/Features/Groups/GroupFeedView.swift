@@ -5,6 +5,7 @@ struct GroupFeedView: View {
     @State private var photos: [Photo] = []
     @State private var isLoading = true
     @State private var showingCamera = false
+    @State private var showCopied = false
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
@@ -14,19 +15,55 @@ struct GroupFeedView: View {
 
             if isLoading {
                 ProgressView().tint(.white)
-            } else if photos.isEmpty {
-                VStack(spacing: 12) {
-                    Text("no photos yet")
-                        .foregroundColor(.gray)
-                    Text("be the first to capture the night")
-                        .font(.caption)
-                        .foregroundColor(.gray.opacity(0.6))
-                }
             } else {
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 2) {
-                        ForEach(photos) { photo in
-                            PhotoGridCell(photo: photo)
+                    VStack(spacing: 0) {
+                        // Invite code bar
+                        Button {
+                            UIPasteboard.general.string = group.inviteCode
+                            withAnimation { showCopied = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation { showCopied = false }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "link")
+                                    .font(.caption)
+                                Text(group.inviteCode)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                Spacer()
+                                Text(showCopied ? "copied!" : "tap to copy")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
+
+                        // Photo grid
+                        if photos.isEmpty {
+                            VStack(spacing: 12) {
+                                Spacer().frame(height: 60)
+                                Text("no photos yet")
+                                    .foregroundColor(.gray)
+                                Text("be the first to capture the night")
+                                    .font(.caption)
+                                    .foregroundColor(.gray.opacity(0.6))
+                            }
+                            .frame(maxWidth: .infinity)
+                        } else {
+                            LazyVGrid(columns: columns, spacing: 2) {
+                                ForEach(photos) { photo in
+                                    PhotoGridCell(photo: photo)
+                                }
+                            }
                         }
                     }
                 }
@@ -51,20 +88,6 @@ struct GroupFeedView: View {
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadPhotos() }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    UIPasteboard.general.string = group.inviteCode
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
-                        Text(group.inviteCode)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
-        }
         .fullScreenCover(isPresented: $showingCamera) {
             CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
                 photos.insert(newPhoto, at: 0)

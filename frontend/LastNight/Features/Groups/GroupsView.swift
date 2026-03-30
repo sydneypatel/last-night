@@ -6,6 +6,8 @@ struct GroupsView: View {
     @State private var showingCreateGroup = false
     @State private var showingJoinGroup = false
     @State private var inviteCode = ""
+    @State private var toastMessage: String?
+    @State private var joinError: String?
 
     var body: some View {
         NavigationStack {
@@ -13,8 +15,7 @@ struct GroupsView: View {
                 Color.black.ignoresSafeArea()
 
                 if isLoading {
-                    ProgressView()
-                        .tint(.white)
+                    ProgressView().tint(.white)
                 } else if groups.isEmpty {
                     VStack(spacing: 16) {
                         Text("no groups yet")
@@ -35,6 +36,23 @@ struct GroupsView: View {
                         }
                         .padding()
                     }
+                }
+
+                // Toast
+                if let toast = toastMessage {
+                    VStack {
+                        Spacer()
+                        Text(toast)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.15))
+                            .cornerRadius(20)
+                            .padding(.bottom, 100)
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut, value: toastMessage)
                 }
             }
             .navigationTitle("last night")
@@ -65,6 +83,14 @@ struct GroupsView: View {
                 Button("join") { joinGroup() }
                 Button("cancel", role: .cancel) {}
             }
+            .alert("Couldn't join...", isPresented: Binding(
+                get: { joinError != nil },
+                set: { if !$0 { joinError = nil } }
+            )) {
+                Button("ok", role: .cancel) { joinError = nil }
+            } message: {
+                Text(joinError ?? "")
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -84,9 +110,20 @@ struct GroupsView: View {
                 let group = try await APIClient.shared.joinGroup(inviteCode: inviteCode)
                 groups.insert(group, at: 0)
                 inviteCode = ""
+            } catch APIError.serverError(let msg) {
+                joinError = msg
             } catch {
-                print("Error joining group:", error)
+                joinError = "Something went wrong, try again"
             }
+        }
+    }
+
+    private func showToast(_ message: String) {
+        withAnimation {
+            toastMessage = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { toastMessage = nil }
         }
     }
 }
