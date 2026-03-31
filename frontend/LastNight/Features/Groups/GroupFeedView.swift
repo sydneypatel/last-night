@@ -27,26 +27,30 @@ struct GroupFeedView: View {
                                 withAnimation { showCopied = false }
                             }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 12) {
                                 Image(systemName: "link")
+                                    .font(.body)
+                                Text("invite code:")
                                     .font(.caption)
+                                    .foregroundColor(.gray)
                                 Text(group.inviteCode)
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
+                                    .font(.body)
+                                    .fontWeight(.bold)
+                                    .tracking(2)
                                 Spacer()
                                 Text(showCopied ? "copied!" : "tap to copy")
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundColor(.gray)
                             }
                             .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(10)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 18)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(14)
                         }
                         .padding(.horizontal)
-                        .padding(.top, 8)
-                        .padding(.bottom, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, 16)
 
                         // Photo grid
                         if photos.isEmpty {
