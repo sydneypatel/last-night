@@ -6,6 +6,7 @@ struct GroupFeedView: View {
     @State private var isLoading = true
     @State private var showingCamera = false
     @State private var showCopied = false
+    @State private var showingMembers = false
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
@@ -87,11 +88,23 @@ struct GroupFeedView: View {
         }
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingMembers = true
+                } label: {
+                    Image(systemName: "person.2.fill")
+                }
+            }
+        }
         .task { await loadPhotos() }
         .fullScreenCover(isPresented: $showingCamera) {
             CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
                 photos.insert(newPhoto, at: 0)
             })
+        }
+        .sheet(isPresented: $showingMembers) {
+            MembersView(groupId: group.id)
         }
     }
 

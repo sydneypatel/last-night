@@ -115,4 +115,24 @@ router.delete('/:id/leave', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.delete('/:id', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Not a member' });
+    if (rows[0].role === 'owner') {
+      await pool.query('DELETE FROM groups WHERE id = $1', [req.params.id]);
+    } else {
+      await pool.query(
+        'DELETE FROM group_members WHERE group_id = $1 AND user_id = $2',
+        [req.params.id, req.user.id]
+      );
+    }
+    res.json({ deleted: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

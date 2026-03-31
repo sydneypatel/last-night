@@ -37,4 +37,16 @@ router.patch('/profile', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.delete('/account', auth, async (req, res, next) => {
+  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  try {
+    // Delete from our DB
+    await pool.query('DELETE FROM users WHERE id = $1', [req.user.id]);
+    // Also delete from Firebase Auth
+    const admin = require('../config/firebase');
+    await admin.auth().deleteUser(req.firebaseUid);
+    res.json({ deleted: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

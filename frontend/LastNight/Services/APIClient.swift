@@ -77,6 +77,19 @@ class APIClient {
         let response: UserResponse = try await request(path: "/auth/sync", method: "POST")
         return response.user
     }
+    
+    func updateProfile(displayName: String) async throws -> User {
+        let response: UserResponse = try await request(
+            path: "/auth/profile",
+            method: "PATCH",
+            body: ["displayName": displayName]
+        )
+        return response.user
+    }
+
+    func deleteAccount() async throws {
+        let _: EmptyResponse = try await request(path: "/auth/account", method: "DELETE")
+    }
 
     // MARK: - Groups
 
@@ -106,6 +119,10 @@ class APIClient {
     func getGroup(id: String) async throws -> (Group, [User]) {
         let response: GroupDetailResponse = try await request(path: "/groups/\(id)")
         return (response.group, response.members)
+    }
+    
+    func leaveOrDeleteGroup(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/groups/\(id)", method: "DELETE")
     }
 
     // MARK: - Photos

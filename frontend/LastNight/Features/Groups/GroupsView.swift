@@ -32,6 +32,20 @@ struct GroupsView: View {
                                 NavigationLink(destination: GroupFeedView(group: group)) {
                                     GroupRowView(group: group)
                                 }
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        deleteGroup(group)
+                                    } label: {
+                                        Label("delete", systemImage: "trash")
+                                    }
+                                }
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        deleteGroup(group)
+                                    } label: {
+                                        Label("delete group", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                         .padding()
@@ -126,6 +140,19 @@ struct GroupsView: View {
             withAnimation { toastMessage = nil }
         }
     }
+    
+    private func deleteGroup(_ group: Group) {
+        Task {
+            do {
+                try await APIClient.shared.leaveOrDeleteGroup(id: group.id)
+                withAnimation {
+                    groups.removeAll { $0.id == group.id }
+                }
+            } catch {
+                print("Error deleting group:", error)
+            }
+        }
+    }
 }
 
 struct GroupRowView: View {
@@ -145,7 +172,7 @@ struct GroupRowView: View {
                 Text(group.name)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                Text("\(group.memberCount ?? 0) members · \(group.photoCount ?? 0) photos")
+                Text("\(group.memberCount ?? 0) \(group.memberCount == 1 ? "member" : "members") · \(group.photoCount ?? 0) photos")
                     .font(.caption)
                     .foregroundColor(.gray)
             }

@@ -34,11 +34,11 @@ struct LoginView: View {
                             .font(.caption)
                     }
 
-                    GoogleSignInButton(scheme: .dark, style: .wide) {
+                    GoogleSignInButton(scheme: .light, style: .wide) {
                         signInWithGoogle()
                     }
-                    .frame(height: 50)
-                    .cornerRadius(12)
+                    .frame(height: 54)
+                    .cornerRadius(27)
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 60)
@@ -77,14 +77,12 @@ struct LoginView: View {
                 }
                 guard let firebaseUser = authResult?.user else { return }
 
-                // Check if they already have a DB record
                 Task {
                     do {
                         let dbUser = try await APIClient.shared.syncUser()
                         appState.currentUser = dbUser
                         appState.isAuthenticated = true
                     } catch APIError.notFound {
-                        // New user — needs username setup
                         pendingFirebaseUser = firebaseUser
                         showingUsernameSetup = true
                     } catch {

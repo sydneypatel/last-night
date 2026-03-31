@@ -7,8 +7,13 @@ struct UsernameSetupView: View {
 
     @State private var username = ""
     @State private var displayName = ""
+    @State private var acceptedTerms = false
     @State private var isLoading = false
     @State private var errorMessage: String?
+
+    var canProceed: Bool {
+        !username.isEmpty && !displayName.isEmpty && acceptedTerms
+    }
 
     var body: some View {
         ZStack {
@@ -52,6 +57,42 @@ struct UsernameSetupView: View {
                         .foregroundColor(.white)
                     }
 
+                    // Terms & Conditions
+                    Button {
+                        acceptedTerms.toggle()
+                    } label: {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                                    .frame(width: 22, height: 22)
+                                if acceptedTerms {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.white)
+                                        .frame(width: 22, height: 22)
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.black)
+                                }
+                            }
+
+                            HStack(spacing: 4) {
+                                Text("I agree to the")
+                                    .foregroundColor(.gray)
+                                Text("Terms & Conditions")
+                                    .foregroundColor(.white)
+                                    .underline()
+                                Text("and")
+                                    .foregroundColor(.gray)
+                                Text("Privacy Policy")
+                                    .foregroundColor(.white)
+                                    .underline()
+                            }
+                            .font(.caption)
+                        }
+                    }
+                    .padding(.top, 4)
+
                     if let error = errorMessage {
                         Text(error)
                             .foregroundColor(.red)
@@ -66,8 +107,7 @@ struct UsernameSetupView: View {
                     register()
                 } label: {
                     if isLoading {
-                        ProgressView()
-                            .tint(.black)
+                        ProgressView().tint(.black)
                     } else {
                         Text("let's go")
                             .fontWeight(.semibold)
@@ -75,12 +115,12 @@ struct UsernameSetupView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(Color.white)
+                .background(canProceed ? Color.white : Color.white.opacity(0.2))
                 .foregroundColor(.black)
                 .cornerRadius(14)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 48)
-                .disabled(isLoading || username.isEmpty || displayName.isEmpty)
+                .disabled(!canProceed || isLoading)
             }
         }
     }
