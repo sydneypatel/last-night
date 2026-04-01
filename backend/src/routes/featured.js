@@ -49,6 +49,7 @@ router.get('/me/library', auth, async (req, res, next) => {
  * MUST be before /:username to avoid route conflict
  */
 router.put('/me/:position', auth, async (req, res, next) => {
+  console.log('=== PUT /me/:position hit, position:', req.params.position, 'photoId:', req.body.photoId, 'user:', req.user?.username);
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
 
   const position = parseInt(req.params.position);
