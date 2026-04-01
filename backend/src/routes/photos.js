@@ -35,9 +35,21 @@ router.post('/confirm', auth, async (req, res, next) => {
   const { groupId, s3Key, thumbnailKey, metadata = {} } = req.body;
   if (!groupId || !s3Key || !thumbnailKey) return res.status(400).json({ error: 'groupId, s3Key, and thumbnailKey are required' });
   try {
+    // Check if the group is already unlocked
+    const { rows: groupRows } = await pool.query(
+      'SELECT unlock_at FROM groups WHERE id = $1',
+      [groupId]
+    );
+    const group = groupRows[0];
+    const alreadyUnlocked = group?.unlock_at && new Date(group.unlock_at) <= new Date();
+
     const { rows } = await pool.query(
-      `INSERT INTO photos (group_id, user_id, s3_key, thumbnail_key, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [groupId, req.user.id, s3Key, thumbnailKey, JSON.stringify(metadata)]
+      `INSERT INTO photos (group_id, user_id, s3_key, thumbnail_key, metadata, locked, unlocked_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [groupId, req.user.id, s3Key, thumbnailKey, JSON.stringify(metadata),
+       alreadyUnlocked ? false : true,
+       alreadyUnlocked ? new Date() : null]
     );
     res.status(201).json({ photo: rows[0] });
   } catch (err) { next(err); }
