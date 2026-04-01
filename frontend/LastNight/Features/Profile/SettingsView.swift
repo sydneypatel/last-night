@@ -174,11 +174,11 @@ struct SettingsView: View {
                 let (_, uploadResponse) = try await URLSession.shared.upload(for: request, from: jpegData)
                 print("=== S3 upload status:", (uploadResponse as? HTTPURLResponse)?.statusCode ?? -1)
 
-                let avatarUrl = "https://\(Constants.s3BucketName).s3.\(Constants.awsRegion).amazonaws.com/\(key)"
-                print("=== avatar URL:", avatarUrl)
-
+                let avatarUrl = "https://\(Constants.s3BucketName).s3.\(Constants.awsRegion).amazonaws.com/\(key)?t=\(Int(Date().timeIntervalSince1970))"
+                
                 let user = try await APIClient.shared.updateProfile(displayName: appState.currentUser?.displayName ?? "", avatarUrl: avatarUrl)
                 print("=== profile updated!")
+                print("=== new avatar URL:", appState.currentUser?.avatarUrl ?? "nil")
                 await MainActor.run {
                     appState.currentUser = user
                     isUploadingAvatar = false

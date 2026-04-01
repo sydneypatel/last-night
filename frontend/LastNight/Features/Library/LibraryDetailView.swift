@@ -244,18 +244,9 @@ struct PinToFeaturedSheet: View {
                                             .fill(Color.white.opacity(0.05))
                                             .aspectRatio(1, contentMode: .fit)
 
-                                        if let slotPhoto = slot.photo,
-                                           let url = slotPhoto.url,
-                                           let imageURL = URL(string: url) {
-                                            AsyncImage(url: imageURL) { image in
-                                                image.resizable().scaledToFill()
-                                            } placeholder: {
-                                                Color.white.opacity(0.05)
-                                            }
-                                            .clipped()
-                                            .opacity(0.5)
-
-                                            // Replace indicator
+                                        if let slotPhoto = slot.photo {
+                                            // show replace indicator
+                                            Color.white.opacity(0.3)
                                             Image(systemName: "arrow.triangle.2.circlepath")
                                                 .foregroundColor(.white)
                                                 .font(.title3)

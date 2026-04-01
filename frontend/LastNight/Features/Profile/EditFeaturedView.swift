@@ -89,9 +89,20 @@ struct EditFeaturedView: View {
     private func setFeatured(position: Int, photoId: String?) async {
         do {
             try await APIClient.shared.setFeaturedPhoto(position: position, photoId: photoId)
-            let newPhoto = photoId != nil ? myPhotos.first(where: { $0.id == photoId }) : nil
+            
+            // Convert Photo to FeaturedPhoto for local state update
+            var newFeaturedPhoto: FeaturedPhoto? = nil
+            if let photoId, let photo = myPhotos.first(where: { $0.id == photoId }) {
+                newFeaturedPhoto = FeaturedPhoto(
+                    id: photo.id,
+                    s3Key: photo.s3Key,
+                    locked: photo.locked,
+                    url: photo.url
+                )
+            }
+            
             if let idx = slots.firstIndex(where: { $0.position == position }) {
-                slots[idx] = LNFeaturedSlot(position: position, photo: newPhoto)
+                slots[idx] = LNFeaturedSlot(position: position, photo: newFeaturedPhoto)
             }
         } catch {
             print("Error setting featured:", error)

@@ -178,7 +178,7 @@ class APIClient {
     // MARK: - Featured
 
     func getFeaturedGrid(username: String) async throws -> [LNFeaturedSlot] {
-        let response: FeaturedGrid = try await request(path: "/featured/\(username)")
+        let response: LNFeaturedGrid = try await request(path: "/featured/\(username)")
         return response.grid
     }
 

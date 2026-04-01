@@ -35,15 +35,12 @@ struct FeaturedSlotCell: View {
 
             if let photo = slot.photo, let url = photo.url, let imageURL = URL(string: url) {
                 AsyncImage(url: imageURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
+                    image.resizable().scaledToFill()
                 } placeholder: {
                     Color.white.opacity(0.05)
                 }
                 .clipped()
             } else {
-                // Empty slot
                 VStack(spacing: 4) {
                     if isOwner {
                         Image(systemName: "plus")

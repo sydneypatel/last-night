@@ -136,9 +136,10 @@ struct PhotoDetailView: View {
             let library = try await APIClient.shared.getLibrary()
             await MainActor.run {
                 isSaved = library.contains(where: { $0.id == photo.id })
+                print("=== checkIfSaved: isSaved =", isSaved, "for photo:", photo.id)
             }
         } catch {
-            print("Error checking library:", error)
+            print("=== checkIfSaved error:", error)
         }
     }
 
