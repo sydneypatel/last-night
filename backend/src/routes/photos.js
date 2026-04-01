@@ -7,6 +7,7 @@ const pool = require('../config/db');
 const s3 = require('../config/s3');
 const auth = require('../middleware/auth');
 const BUCKET = process.env.S3_BUCKET_NAME;
+const CLOUDFRONT = process.env.CLOUDFRONT_DOMAIN;
 
 router.post('/upload-url', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
@@ -71,15 +72,23 @@ router.get('/group/:groupId', auth, async (req, res, next) => {
        ORDER BY p.captured_at DESC`,
       [req.params.groupId]
     );
-    const photosWithUrls = await Promise.all(photos.map(async (photo) => {
-      const keyToServe = photo.locked ? photo.thumbnail_key : photo.s3_key;
-      const url = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: BUCKET, Key: keyToServe }),
-        { expiresIn: 3600 }
-      );
-      return { ...photo, url, s3_key: photo.locked ? null : photo.s3_key };
-    }));
+    const photosWithUrls = await Promise.all(
+      photos.map(async (photo) => {
+        let url;
+        if (photo.locked) {
+          url = await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: BUCKET, Key: photo.thumbnail_key }),
+            { expiresIn: 3600 }
+          );
+        } else {
+          url = CLOUDFRONT
+            ? `${CLOUDFRONT}/${photo.s3_key}`
+            : await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }), { expiresIn: 3600 });
+        }
+        return { ...photo, url, s3_key: photo.locked ? null : photo.s3_key };
+      })
+    );
     res.json({ photos: photosWithUrls });
   } catch (err) { next(err); }
 });
