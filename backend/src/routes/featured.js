@@ -7,24 +7,28 @@ const s3 = require('../config/s3');
 const auth = require('../middleware/auth');
 
 const BUCKET = process.env.S3_BUCKET_NAME;
+const CLOUDFRONT = process.env.CLOUDFRONT_DOMAIN;
 
 async function attachUrl(photo) {
   if (!photo.s3_key) return { ...photo, url: null };
-  const url = await getSignedUrl(
-    s3,
-    new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }),
-    { expiresIn: 3600 }
-  );
+  const url = CLOUDFRONT
+    ? `${CLOUDFRONT}/${photo.s3_key}`
+    : await getSignedUrl(
+        s3,
+        new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }),
+        { expiresIn: 3600 }
+      );
   return { ...photo, url };
 }
 
 /**
  * GET /featured/me/library
  * Get all unlocked photos this user has taken — for picking featured photos
+ * MUST be before /:username to avoid route conflict
  */
 router.get('/me/library', auth, async (req, res, next) => {
+  console.log('=== /me/library hit, user:', req.user?.username);
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
-
   try {
     const { rows } = await pool.query(
       `SELECT p.*, g.name AS group_name
@@ -34,7 +38,6 @@ router.get('/me/library', auth, async (req, res, next) => {
        ORDER BY p.captured_at DESC`,
       [req.user.id]
     );
-
     const withUrls = await Promise.all(rows.map(attachUrl));
     res.json({ photos: withUrls });
   } catch (err) { next(err); }
@@ -43,6 +46,7 @@ router.get('/me/library', auth, async (req, res, next) => {
 /**
  * PUT /featured/me/:position
  * Set a photo in a specific slot (1-9). Send photoId: null to clear the slot.
+ * MUST be before /:username to avoid route conflict
  */
 router.put('/me/:position', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
@@ -56,7 +60,6 @@ router.put('/me/:position', auth, async (req, res, next) => {
 
   try {
     if (!photoId) {
-      // Clear the slot
       await pool.query(
         'DELETE FROM featured_photos WHERE user_id = $1 AND position = $2',
         [req.user.id, position]
@@ -64,7 +67,6 @@ router.put('/me/:position', auth, async (req, res, next) => {
       return res.json({ position, photo: null });
     }
 
-    // Verify the photo is unlocked and belongs to this user
     const { rows: photoRows } = await pool.query(
       'SELECT * FROM photos WHERE id = $1 AND user_id = $2 AND locked = FALSE',
       [photoId, req.user.id]
@@ -73,7 +75,6 @@ router.put('/me/:position', auth, async (req, res, next) => {
       return res.status(403).json({ error: 'Photo not found or still locked' });
     }
 
-    // Upsert into the slot
     const { rows } = await pool.query(
       `INSERT INTO featured_photos (user_id, photo_id, position)
        VALUES ($1, $2, $3)
@@ -94,9 +95,10 @@ router.put('/me/:position', auth, async (req, res, next) => {
 /**
  * GET /featured/:username
  * Get a user's featured 3x3 grid (public)
- * Returns all 9 slots — empty slots have photo: null
+ * MUST be after /me routes
  */
 router.get('/:username', auth, async (req, res, next) => {
+  console.log('=== /:username hit, username:', req.params.username);
   try {
     const { rows: userRows } = await pool.query(
       'SELECT id FROM users WHERE LOWER(username) = $1',
@@ -114,13 +116,11 @@ router.get('/:username', auth, async (req, res, next) => {
       [userId]
     );
 
-    // Build full 9-slot grid
     const grid = Array.from({ length: 9 }, (_, i) => {
       const slot = rows.find(r => r.position === i + 1);
       return { position: i + 1, photo: slot?.id ? slot : null };
     });
 
-    // Attach presigned URLs for filled slots
     const gridWithUrls = await Promise.all(
       grid.map(async (slot) => {
         if (!slot.photo || slot.photo.locked) return slot;
