@@ -5,12 +5,11 @@ struct Photo: Codable, Identifiable {
     let groupId: String
     let userId: String
     let s3Key: String?
-    let thumbnailKey: String
+    let thumbnailKey: String?
     let locked: Bool
-    let capturedAt: Date
+    let capturedAt: Date?
     let unlockedAt: Date?
     let url: String?
-    // Joined from query
     let username: String?
     let displayName: String?
     let avatarUrl: String?

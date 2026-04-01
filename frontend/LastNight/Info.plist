@@ -11,6 +11,8 @@
             <array>
                 <string>com.googleusercontent.apps.1062216231030-dda7ajnmiamg38k8cqtg7ge80chvh628</string>
             </array>
+            <key>NSPhotoLibraryAddUsageDescription</key>
+            <string>Last Night needs access to save photos to your camera roll.</string>
         </dict>
     </array>
     <key>GIDClientID</key>

@@ -3,8 +3,11 @@ import SwiftUI
 struct LibraryView: View {
     @State private var photos: [Photo] = []
     @State private var isLoading = true
+    @State private var selectedPhoto: Photo?
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [GridItem(.flexible(), spacing: 2),
+                           GridItem(.flexible(), spacing: 2),
+                           GridItem(.flexible(), spacing: 2)]
 
     var body: some View {
         NavigationStack {
@@ -29,14 +32,15 @@ struct LibraryView: View {
                             ForEach(photos) { photo in
                                 if let url = photo.url, let imageURL = URL(string: url) {
                                     AsyncImage(url: imageURL) { image in
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
+                                        image.resizable().scaledToFill()
                                     } placeholder: {
                                         Color.white.opacity(0.05)
                                     }
                                     .aspectRatio(1, contentMode: .fit)
                                     .clipped()
+                                    .onTapGesture {
+                                        selectedPhoto = photo
+                                    }
                                 }
                             }
                         }
@@ -45,6 +49,10 @@ struct LibraryView: View {
             }
             .navigationTitle("library")
             .task { await loadLibrary() }
+            .sheet(item: $selectedPhoto) { photo in
+                LibraryDetailView(photo: photo)
+                    .environmentObject(AppState())
+            }
         }
         .preferredColorScheme(.dark)
     }

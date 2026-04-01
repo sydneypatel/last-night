@@ -7,6 +7,7 @@ struct GroupFeedView: View {
     @State private var showingCamera = false
     @State private var showCopied = false
     @State private var showingMembers = false
+    @State private var selectedPhoto: Photo?
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
@@ -95,6 +96,11 @@ struct GroupFeedView: View {
                             LazyVGrid(columns: columns, spacing: 2) {
                                 ForEach(photos) { photo in
                                     PhotoGridCell(photo: photo)
+                                        .onTapGesture {
+                                            if !photo.locked {
+                                                selectedPhoto = photo
+                                            }
+                                        }
                                 }
                             }
                         }
@@ -137,6 +143,9 @@ struct GroupFeedView: View {
         }
         .sheet(isPresented: $showingMembers) {
             MembersView(groupId: group.id)
+        }
+        .sheet(item: $selectedPhoto) { photo in
+            PhotoDetailView(photo: photo, groupName: group.name)
         }
     }
 
