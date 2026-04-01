@@ -172,7 +172,7 @@ struct GroupRowView: View {
                 Text(group.name)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                Text("\(group.memberCount ?? 0) \(group.memberCount == 1 ? "member" : "members") · \(group.photoCount ?? 0) photos")
+                Text("\(group.memberCount ?? 0) \(group.memberCount == 1 ? "member" : "members") · \(group.photoCount ?? 0) \(group.photoCount == 1 ? "photo" : "photos")")
                     .font(.caption)
                     .foregroundColor(.gray)
             }

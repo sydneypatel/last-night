@@ -10,6 +10,21 @@ struct GroupFeedView: View {
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
+    private var unlockLabel: String {
+        switch group.unlockMode {
+        case .sunrise:
+            return "photos unlock at sunrise"
+        case .sundayNight:
+            return "photos unlock sunday night"
+        case .custom:
+            guard let unlockAt = group.unlockAt else { return "photos unlock at custom time" }
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            return "unlocks \(formatter.string(from: unlockAt))"
+        }
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -50,6 +65,19 @@ struct GroupFeedView: View {
                         }
                         .padding(.horizontal)
                         .padding(.top, 12)
+                        .padding(.bottom, 8)
+
+                        // Unlock time
+                        HStack(spacing: 6) {
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                            Text(unlockLabel)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
                         .padding(.bottom, 16)
 
                         // Photo grid

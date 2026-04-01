@@ -6,7 +6,9 @@ const authRoutes    = require('./routes/auth');
 const groupRoutes   = require('./routes/groups');
 const photoRoutes   = require('./routes/photos');
 const libraryRoutes = require('./routes/library');
-const userRoutes    = require('./routes/users');
+const userRoutes = require('./routes/users');
+const featuredRoutes = require('./routes/featured');
+
 const errorHandler  = require('./middleware/errorHandler');
 
 const app = express();
@@ -20,7 +22,8 @@ app.use('/auth',    authRoutes);
 app.use('/groups',  groupRoutes);
 app.use('/photos',  photoRoutes);
 app.use('/library', libraryRoutes);
-app.use('/users',   userRoutes);
+app.use('/users', userRoutes);
+app.use('/featured', featuredRoutes);
 
 app.use(errorHandler);
 

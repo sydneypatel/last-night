@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
@@ -6,12 +7,56 @@ struct SettingsView: View {
     @State private var showingDeleteAccount = false
     @State private var newDisplayName = ""
     @State private var errorMessage: String?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var isUploadingAvatar = false
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Avatar picker
+                VStack(spacing: 12) {
+                    ZStack(alignment: .bottomTrailing) {
+                        if let avatarUrl = appState.currentUser?.avatarUrl,
+                           let url = URL(string: avatarUrl) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                avatarPlaceholder
+                            }
+                            .frame(width: 88, height: 88)
+                            .clipShape(Circle())
+                        } else {
+                            avatarPlaceholder
+                        }
+
+                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 28, height: 28)
+                                if isUploadingAvatar {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .tint(.black)
+                                } else {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                        }
+                        .disabled(isUploadingAvatar)
+                    }
+
+                    Text(appState.currentUser?.displayName ?? "")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                }
+                .padding(.top, 24)
+                .padding(.bottom, 24)
+
                 VStack(spacing: 12) {
                     Button {
                         newDisplayName = appState.currentUser?.displayName ?? ""
@@ -46,7 +91,6 @@ struct SettingsView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 24)
 
                 Spacer()
 
@@ -76,6 +120,10 @@ struct SettingsView: View {
         }
         .navigationTitle("settings")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: selectedPhoto) { _, newItem in
+            guard let newItem else { return }
+            uploadAvatar(item: newItem)
+        }
         .alert("change display name", isPresented: $showingChangeName) {
             TextField("display name", text: $newDisplayName)
             Button("save") { updateDisplayName() }
@@ -90,6 +138,60 @@ struct SettingsView: View {
         .preferredColorScheme(.dark)
     }
 
+    private var avatarPlaceholder: some View {
+        Circle()
+            .fill(Color.white.opacity(0.1))
+            .frame(width: 88, height: 88)
+            .overlay(
+                Text(appState.currentUser?.displayName.prefix(1) ?? "?")
+                    .font(.title)
+                    .foregroundColor(.white)
+            )
+    }
+
+    private func uploadAvatar(item: PhotosPickerItem) {
+        isUploadingAvatar = true
+        Task {
+            do {
+                print("=== loading image data...")
+                guard let data = try await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data),
+                      let jpegData = image.jpegData(compressionQuality: 0.8) else {
+                    print("=== failed to load image data")
+                    isUploadingAvatar = false
+                    return
+                }
+                print("=== image loaded, size:", jpegData.count)
+
+                print("=== getting upload URL...")
+                let (uploadUrl, key) = try await APIClient.shared.getAvatarUploadURL()
+                print("=== got upload URL, key:", key)
+
+                guard let url = URL(string: uploadUrl) else { return }
+                var request = URLRequest(url: url)
+                request.httpMethod = "PUT"
+                request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+                let (_, uploadResponse) = try await URLSession.shared.upload(for: request, from: jpegData)
+                print("=== S3 upload status:", (uploadResponse as? HTTPURLResponse)?.statusCode ?? -1)
+
+                let avatarUrl = "https://\(Constants.s3BucketName).s3.\(Constants.awsRegion).amazonaws.com/\(key)"
+                print("=== avatar URL:", avatarUrl)
+
+                let user = try await APIClient.shared.updateProfile(displayName: appState.currentUser?.displayName ?? "", avatarUrl: avatarUrl)
+                print("=== profile updated!")
+                await MainActor.run {
+                    appState.currentUser = user
+                    isUploadingAvatar = false
+                }
+            } catch {
+                print("=== avatar upload error:", error)
+                await MainActor.run {
+                    errorMessage = "Failed to upload photo"
+                    isUploadingAvatar = false
+                }
+            }
+        }
+    }
     private func updateDisplayName() {
         guard !newDisplayName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         Task {

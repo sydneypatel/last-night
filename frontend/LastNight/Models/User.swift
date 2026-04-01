@@ -2,13 +2,14 @@ import Foundation
 
 struct User: Codable, Identifiable {
     let id: String
-    let firebaseUid: String
+    let firebaseUid: String?
     let username: String
     let displayName: String
     let avatarUrl: String?
-    let timezone: String
+    let timezone: String?
     let bio: String?
-    let createdAt: Date
+    let createdAt: Date?
+    var role: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,5 +20,6 @@ struct User: Codable, Identifiable {
         case timezone
         case bio
         case createdAt = "created_at"
+        case role
     }
 }

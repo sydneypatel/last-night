@@ -2,10 +2,8 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
-    @State private var myPhotos: [Photo] = []
+    @State private var featuredSlots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var isLoading = true
-
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
         NavigationStack {
@@ -14,16 +12,27 @@ struct ProfileView: View {
 
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Header
                         VStack(spacing: 10) {
-                            Circle()
-                                .fill(Color.white.opacity(0.1))
+                            if let avatarUrl = appState.currentUser?.avatarUrl,
+                               let url = URL(string: avatarUrl) {
+                                AsyncImage(url: url) { image in
+                                    image.resizable().scaledToFill()
+                                } placeholder: {
+                                    Circle().fill(Color.white.opacity(0.1))
+                                }
                                 .frame(width: 80, height: 80)
-                                .overlay(
-                                    Text(appState.currentUser?.displayName.prefix(1) ?? "?")
-                                        .font(.title)
-                                        .foregroundColor(.white)
-                                )
-
+                                .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.white.opacity(0.1))
+                                    .frame(width: 80, height: 80)
+                                    .overlay(
+                                        Text(appState.currentUser?.displayName.prefix(1) ?? "?")
+                                            .font(.title)
+                                            .foregroundColor(.white)
+                                    )
+                            }
                             VStack(spacing: 4) {
                                 Text(appState.currentUser?.displayName ?? "")
                                     .font(.title3)
@@ -35,43 +44,26 @@ struct ProfileView: View {
                             }
                         }
                         .padding(.top, 24)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 24)
 
+                        // Featured grid header
                         HStack {
                             Text("my top nights:")
                                 .font(.headline)
                                 .foregroundColor(.white)
                             Spacer()
+                            Text("edit")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
                         }
                         .padding(.horizontal)
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 8)
 
                         if isLoading {
                             ProgressView().tint(.white).padding(.top, 40)
-                        } else if myPhotos.isEmpty {
-                            VStack(spacing: 8) {
-                                Text("no photos yet")
-                                    .foregroundColor(.gray)
-                                Text("your unlocked photos will appear here")
-                                    .font(.caption)
-                                    .foregroundColor(.gray.opacity(0.6))
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.top, 40)
-                            .padding(.horizontal, 32)
                         } else {
-                            LazyVGrid(columns: columns, spacing: 2) {
-                                ForEach(myPhotos) { photo in
-                                    if let url = photo.url, let imageURL = URL(string: url) {
-                                        AsyncImage(url: imageURL) { image in
-                                            image.resizable().scaledToFill()
-                                        } placeholder: {
-                                            Color.white.opacity(0.05)
-                                        }
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .clipped()
-                                    }
-                                }
+                            NavigationLink(destination: EditFeaturedView()) {
+                                FeaturedGridView(slots: featuredSlots, isOwner: true)
                             }
                         }
                     }
@@ -87,16 +79,23 @@ struct ProfileView: View {
                     }
                 }
             }
-            .task { await loadMyPhotos() }
+            .task { await loadFeatured() }
         }
         .preferredColorScheme(.dark)
     }
 
-    private func loadMyPhotos() async {
+    private func loadFeatured() async {
+        guard let username = appState.currentUser?.username else {
+            isLoading = false
+            return
+        }
         do {
-            myPhotos = try await APIClient.shared.getLibrary()
+            let fetched = try await APIClient.shared.getFeaturedGrid(username: username)
+            featuredSlots = (1...9).map { pos in
+                fetched.first(where: { $0.position == pos }) ?? LNFeaturedSlot(position: pos, photo: nil)
+            }
         } catch {
-            print("Error loading photos:", error)
+            print("Error loading featured:", error)
         }
         isLoading = false
     }

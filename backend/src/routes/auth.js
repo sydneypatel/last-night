@@ -37,6 +37,29 @@ router.patch('/profile', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/avatar-upload-url', auth, async (req, res, next) => {
+  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  try {
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const s3 = require('../config/s3');
+    const { v4: uuidv4 } = require('uuid');
+
+    const key = `avatars/${req.user.id}/${uuidv4()}.jpg`;
+    const uploadUrl = await getSignedUrl(
+      s3,
+      new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: key,
+        ContentType: 'image/jpeg',
+      }),
+      { expiresIn: 300 }
+    );
+
+    res.json({ uploadUrl, key });
+  } catch (err) { next(err); }
+});
+
 router.delete('/account', auth, async (req, res, next) => {
   if (!req.user) return res.status(404).json({ error: 'User not found' });
   try {

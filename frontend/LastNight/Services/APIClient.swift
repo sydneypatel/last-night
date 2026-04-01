@@ -55,6 +55,10 @@ class APIClient {
         }
 
         let decoder = JSONDecoder()
+        // Temporary debug — remove later
+        if let str = String(data: data, encoding: .utf8) {
+            print("=== RAW RESPONSE for \(path):", str)
+        }
         decoder.dateDecodingStrategy = .iso8601
         guard let decoded = try? decoder.decode(T.self, from: data) else {
             throw APIError.decodingError
@@ -78,13 +82,24 @@ class APIClient {
         return response.user
     }
     
-    func updateProfile(displayName: String) async throws -> User {
+    func updateProfile(displayName: String, avatarUrl: String? = nil) async throws -> User {
+        var body: [String: Any] = ["displayName": displayName]
+        if let avatarUrl { body["avatarUrl"] = avatarUrl }
         let response: UserResponse = try await request(
             path: "/auth/profile",
             method: "PATCH",
-            body: ["displayName": displayName]
+            body: body
         )
         return response.user
+    }
+    
+    func getAvatarUploadURL() async throws -> (uploadUrl: String, key: String) {
+        struct AvatarURLResponse: Decodable { let uploadUrl: String; let key: String }
+        let response: AvatarURLResponse = try await request(
+            path: "/auth/avatar-upload-url",
+            method: "POST"
+        )
+        return (response.uploadUrl, response.key)
     }
 
     func deleteAccount() async throws {
@@ -94,9 +109,9 @@ class APIClient {
     // MARK: - Groups
 
     func getGroups() async throws -> [Group] {
-        let response: GroupsResponse = try await request(path: "/groups")
-        return response.groups
-    }
+            let response: GroupsResponse = try await request(path: "/groups")
+            return response.groups
+        }
 
     func createGroup(name: String, unlockMode: String, unlockAt: Date?, timezone: String) async throws -> Group {
         var body: [String: Any] = ["name": name, "unlockMode": unlockMode, "timezone": timezone]
@@ -157,6 +172,28 @@ class APIClient {
 
     func getLibrary() async throws -> [Photo] {
         let response: PhotosResponse = try await request(path: "/library")
+        return response.photos
+    }
+    
+    // MARK: - Featured
+
+    func getFeaturedGrid(username: String) async throws -> [LNFeaturedSlot] {
+        let response: FeaturedGrid = try await request(path: "/featured/\(username)")
+        return response.grid
+    }
+
+    func setFeaturedPhoto(position: Int, photoId: String?) async throws {
+        var body: [String: Any] = [:]
+        if let photoId { body["photoId"] = photoId }
+        let _: EmptyResponse = try await request(
+            path: "/featured/me/\(position)",
+            method: "PUT",
+            body: body
+        )
+    }
+
+    func getMyPhotosForFeaturing() async throws -> [Photo] {
+        let response: PhotosResponse = try await request(path: "/featured/me/library")
         return response.photos
     }
 }

@@ -20,7 +20,7 @@ struct CreateGroupView: View {
                         Text("group name")
                             .font(.caption)
                             .foregroundColor(.gray)
-                        TextField("saturday night, coachella...", text: $name)
+                        TextField("saturday night, bar crawl...", text: $name)
                             .textFieldStyle(LNTextFieldStyle())
                             .autocapitalization(.none)
                     }
