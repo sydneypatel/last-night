@@ -3,6 +3,22 @@ const router = express.Router();
 const pool = require('../config/db');
 const auth = require('../middleware/auth');
 
+function getNextSunrise(timezone) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString('en-US', { timeZone: timezone });
+  return new Date(tomorrowStr + ' 06:30:00');
+}
+
+function getNextSundayNight(timezone) {
+  const now = new Date();
+  const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
+  const nextSunday = new Date(now);
+  nextSunday.setDate(now.getDate() + daysUntilSunday);
+  const sundayStr = nextSunday.toLocaleDateString('en-US', { timeZone: timezone });
+  return new Date(sundayStr + ' 23:59:00');
+}
+
 router.get('/', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
   try {
@@ -30,12 +46,21 @@ router.post('/', auth, async (req, res, next) => {
   const validModes = ['sunrise', 'custom', 'sunday_night'];
   if (!validModes.includes(unlockMode)) return res.status(400).json({ error: 'invalid unlockMode' });
   if (unlockMode === 'custom' && !unlockAt) return res.status(400).json({ error: 'unlockAt is required for custom mode' });
+
+  // Calculate unlock time based on mode
+  let resolvedUnlockAt = unlockAt || null;
+  if (unlockMode === 'sunrise') {
+    resolvedUnlockAt = getNextSunrise(timezone);
+  } else if (unlockMode === 'sunday_night') {
+    resolvedUnlockAt = getNextSundayNight(timezone);
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { rows: groupRows } = await client.query(
       `INSERT INTO groups (name, created_by, unlock_mode, unlock_at, timezone) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, req.user.id, unlockMode, unlockAt || null, timezone]
+      [name, req.user.id, unlockMode, resolvedUnlockAt, timezone]
     );
     const group = groupRows[0];
     await client.query(
