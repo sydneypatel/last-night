@@ -10,6 +10,7 @@ const BUCKET = process.env.S3_BUCKET_NAME;
 const CLOUDFRONT = process.env.CLOUDFRONT_DOMAIN;
 
 async function attachUrl(photo) {
+  console.log('=== attachUrl called, s3_key:', photo.s3_key, 'CLOUDFRONT:', CLOUDFRONT);
   if (!photo.s3_key) return { ...photo, url: null };
   const url = CLOUDFRONT
     ? `${CLOUDFRONT}/${photo.s3_key}`
@@ -18,6 +19,7 @@ async function attachUrl(photo) {
         new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }),
         { expiresIn: 3600 }
       );
+  console.log('=== url generated:', url);
   return { ...photo, url };
 }
 
