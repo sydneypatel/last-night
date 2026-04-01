@@ -47,7 +47,7 @@ struct ProfileView: View {
                         .padding(.bottom, 24)
 
                         HStack {
-                            Text("my top nights:")
+                            Text("my favorites:")
                                 .font(.headline)
                                 .foregroundColor(.white)
                             Spacer()

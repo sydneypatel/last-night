@@ -244,7 +244,7 @@ struct PinToFeaturedSheet: View {
                                             .fill(Color.white.opacity(0.05))
                                             .aspectRatio(1, contentMode: .fit)
 
-                                        if let slotPhoto = slot.photo {
+                                        if slot.photo != nil {
                                             // show replace indicator
                                             Color.white.opacity(0.3)
                                             Image(systemName: "arrow.triangle.2.circlepath")

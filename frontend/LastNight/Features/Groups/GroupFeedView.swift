@@ -7,7 +7,7 @@ struct GroupFeedView: View {
     @State private var showingCamera = false
     @State private var showCopied = false
     @State private var showingMembers = false
-    @State private var selectedPhoto: Photo?
+    @State private var selectedPhotoIndex: Int?
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
@@ -77,10 +77,12 @@ struct GroupFeedView: View {
                             .frame(maxWidth: .infinity)
                         } else {
                             LazyVGrid(columns: columns, spacing: 2) {
-                                ForEach(photos) { photo in
+                                ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
                                     PhotoGridCell(photo: photo)
                                         .onTapGesture {
-                                            if !photo.locked { selectedPhoto = photo }
+                                            if !photo.locked {
+                                                selectedPhotoIndex = index
+                                            }
                                         }
                                 }
                             }
@@ -125,8 +127,13 @@ struct GroupFeedView: View {
         .sheet(isPresented: $showingMembers) {
             MembersView(groupId: group.id)
         }
-        .sheet(item: $selectedPhoto) { photo in
-            PhotoDetailView(photo: photo, groupName: group.name)
+        .sheet(isPresented: Binding(
+            get: { selectedPhotoIndex != nil },
+            set: { if !$0 { selectedPhotoIndex = nil } }
+        )) {
+            if let index = selectedPhotoIndex {
+                PhotoDetailView(photos: photos, startIndex: index, groupName: group.name)
+            }
         }
     }
 
