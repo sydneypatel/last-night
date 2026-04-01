@@ -45,10 +45,14 @@ struct LibraryView: View {
                             }
                         }
                     }
+                    .refreshable {
+                        await loadLibrary()
+                    }
                 }
             }
             .navigationTitle("library")
             .task { await loadLibrary() }
+            .onAppear { Task { await loadLibrary() } }
             .sheet(item: $selectedPhoto) { photo in
                 LibraryDetailView(photo: photo)
                     .environmentObject(AppState())

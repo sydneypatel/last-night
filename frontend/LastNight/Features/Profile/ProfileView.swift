@@ -12,7 +12,6 @@ struct ProfileView: View {
 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Header
                         VStack(spacing: 10) {
                             if let avatarUrl = appState.currentUser?.avatarUrl,
                                let url = URL(string: avatarUrl) {
@@ -33,6 +32,7 @@ struct ProfileView: View {
                                             .foregroundColor(.white)
                                     )
                             }
+
                             VStack(spacing: 4) {
                                 Text(appState.currentUser?.displayName ?? "")
                                     .font(.title3)
@@ -46,15 +46,16 @@ struct ProfileView: View {
                         .padding(.top, 24)
                         .padding(.bottom, 24)
 
-                        // Featured grid header
                         HStack {
                             Text("my top nights:")
                                 .font(.headline)
                                 .foregroundColor(.white)
                             Spacer()
-                            Text("edit")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
+                            NavigationLink(destination: EditFeaturedView().environmentObject(appState)) {
+                                Text("edit")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 8)
@@ -62,7 +63,7 @@ struct ProfileView: View {
                         if isLoading {
                             ProgressView().tint(.white).padding(.top, 40)
                         } else {
-                            NavigationLink(destination: EditFeaturedView()) {
+                            NavigationLink(destination: EditFeaturedView().environmentObject(appState)) {
                                 FeaturedGridView(slots: featuredSlots, isOwner: true)
                             }
                         }
@@ -80,6 +81,7 @@ struct ProfileView: View {
                 }
             }
             .task { await loadFeatured() }
+            .onAppear { Task { await loadFeatured() } }
         }
         .preferredColorScheme(.dark)
     }

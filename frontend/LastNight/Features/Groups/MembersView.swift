@@ -22,7 +22,8 @@ struct MembersView: View {
                             ForEach(members) { member in
                                 NavigationLink(destination: PublicProfileView(
                                     username: member.username,
-                                    displayName: member.displayName
+                                    displayName: member.displayName,
+                                    avatarUrl: member.avatarUrl
                                 )) {
                                     HStack(spacing: 14) {
                                         ZStack {
@@ -98,13 +99,8 @@ struct MembersView: View {
         do {
             let (_, fetchedMembers) = try await APIClient.shared.getGroup(id: groupId)
             members = fetchedMembers.map {
-                MemberRow(
-                    id: $0.id,
-                    username: $0.username,
-                    displayName: $0.displayName,
-                    role: $0.role ?? "member",
-                    avatarUrl: $0.avatarUrl
-                )
+                print("=== member:", $0.username, "avatar:", $0.avatarUrl ?? "none")
+                return MemberRow(id: $0.id, username: $0.username, displayName: $0.displayName, role: $0.role ?? "member", avatarUrl: $0.avatarUrl)
             }
         } catch {
             print("Error loading members:", error)

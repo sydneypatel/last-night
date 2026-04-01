@@ -143,12 +143,12 @@ struct PhotoDetailView: View {
     }
 
     private func saveToLibrary() {
-        print("=== saving photo:", photo.id)
+        print("=== save tapped, photo id:", photo.id, "locked:", photo.locked)
         isSaving = true
         Task {
             do {
                 try await APIClient.shared.savePhoto(photoId: photo.id)
-                print("=== saved successfully!")
+                print("=== saved!")
                 await MainActor.run {
                     isSaved = true
                     isSaving = false

@@ -2,7 +2,8 @@ import SwiftUI
 
 struct EditFeaturedView: View {
     @Environment(\.dismiss) var dismiss
-    @State private var slots: [LNFeaturedSlot] = []
+    @EnvironmentObject var appState: AppState
+    @State private var slots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var myPhotos: [Photo] = []
     @State private var selectedSlot: LNFeaturedSlot?
     @State private var isLoading = true
@@ -21,18 +22,20 @@ struct EditFeaturedView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Instructions
                         Text("tap a slot to add or change a photo")
                             .font(.caption)
                             .foregroundColor(.gray)
                             .padding(.top, 8)
 
-                        // 3x3 grid
-                        FeaturedGridView(slots: slots, isOwner: true) { slot in
-                            selectedSlot = slot
-                            showingPhotoPicker = true
+                        if isLoading {
+                            ProgressView().tint(.white).padding(.top, 40)
+                        } else {
+                            FeaturedGridView(slots: slots, isOwner: true) { slot in
+                                selectedSlot = slot
+                                showingPhotoPicker = true
+                            }
+                            .padding(.horizontal, 1)
                         }
-                        .padding(.horizontal, 1)
                     }
                 }
             }
@@ -64,30 +67,30 @@ struct EditFeaturedView: View {
     }
 
     private func loadData() async {
-        async let gridTask = APIClient.shared.getFeaturedGrid(username: "me_placeholder")
-        async let photosTask = APIClient.shared.getMyPhotosForFeaturing()
-
-        // Load my featured grid
         do {
-            myPhotos = try await photosTask
-        } catch {
-            print("Error loading photos:", error)
-        }
+            async let photosTask = APIClient.shared.getMyPhotosForFeaturing()
+            myPhotos = (try? await photosTask) ?? []
 
-        // Build empty grid if needed
-        if slots.isEmpty {
+            if let username = appState.currentUser?.username {
+                let fetched = try await APIClient.shared.getFeaturedGrid(username: username)
+                slots = (1...9).map { pos in
+                    fetched.first(where: { $0.position == pos }) ?? LNFeaturedSlot(position: pos, photo: nil)
+                }
+            } else {
+                slots = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
+            }
+        } catch {
+            print("Error loading featured data:", error)
             slots = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
         }
-
         isLoading = false
     }
 
     private func setFeatured(position: Int, photoId: String?) async {
         do {
             try await APIClient.shared.setFeaturedPhoto(position: position, photoId: photoId)
-            // Update local state
+            let newPhoto = photoId != nil ? myPhotos.first(where: { $0.id == photoId }) : nil
             if let idx = slots.firstIndex(where: { $0.position == position }) {
-                let newPhoto = photoId != nil ? myPhotos.first(where: { $0.id == photoId }) : nil
                 slots[idx] = LNFeaturedSlot(position: position, photo: newPhoto)
             }
         } catch {

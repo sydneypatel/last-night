@@ -99,10 +99,22 @@ struct LibraryDetailView: View {
                         }
                     }
 
-                    if let capturedAt = photo.capturedAt {
-                        Text(capturedAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                    // Photo info
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            if let username = photo.username {
+                                Text("@\(username)")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                            }
+                            if let capturedAt = photo.capturedAt {
+                                Text(capturedAt.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        Spacer()
                     }
                 }
                 .padding(.horizontal, 20)

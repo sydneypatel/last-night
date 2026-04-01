@@ -50,9 +50,11 @@ struct GroupsView: View {
                         }
                         .padding()
                     }
+                    .refreshable {
+                        await loadGroups()
+                    }
                 }
 
-                // Toast
                 if let toast = toastMessage {
                     VStack {
                         Spacer()
@@ -97,7 +99,7 @@ struct GroupsView: View {
                 Button("join") { joinGroup() }
                 Button("cancel", role: .cancel) {}
             }
-            .alert("Couldn't join...", isPresented: Binding(
+            .alert("couldn't join", isPresented: Binding(
                 get: { joinError != nil },
                 set: { if !$0 { joinError = nil } }
             )) {
@@ -133,14 +135,12 @@ struct GroupsView: View {
     }
 
     private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
+        withAnimation { toastMessage = message }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { toastMessage = nil }
         }
     }
-    
+
     private func deleteGroup(_ group: Group) {
         Task {
             do {

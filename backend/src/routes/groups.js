@@ -89,10 +89,10 @@ router.get('/:id', auth, async (req, res, next) => {
     if (groupRows.length === 0) return res.status(404).json({ error: 'Group not found' });
     const { rows: members } = await pool.query(
       `SELECT u.id, u.username, u.display_name, u.avatar_url, gm.role, gm.joined_at
-       FROM group_members gm
-       JOIN users u ON u.id = gm.user_id
-       WHERE gm.group_id = $1
-       ORDER BY gm.joined_at ASC`,
+      FROM group_members gm
+      JOIN users u ON u.id = gm.user_id
+      WHERE gm.group_id = $1
+      ORDER BY gm.joined_at ASC`,
       [req.params.id]
     );
     res.json({ group: groupRows[0], members });

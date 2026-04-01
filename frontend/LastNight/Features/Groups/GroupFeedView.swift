@@ -35,7 +35,6 @@ struct GroupFeedView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Invite code bar
                         Button {
                             UIPasteboard.general.string = group.inviteCode
                             withAnimation { showCopied = true }
@@ -44,19 +43,11 @@ struct GroupFeedView: View {
                             }
                         } label: {
                             HStack(spacing: 12) {
-                                Image(systemName: "link")
-                                    .font(.body)
-                                Text("invite code:")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                Text(group.inviteCode)
-                                    .font(.body)
-                                    .fontWeight(.bold)
-                                    .tracking(2)
+                                Image(systemName: "link").font(.body)
+                                Text("invite code:").font(.caption).foregroundColor(.gray)
+                                Text(group.inviteCode).font(.body).fontWeight(.bold).tracking(2)
                                 Spacer()
-                                Text(showCopied ? "copied!" : "tap to copy")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                                Text(showCopied ? "copied!" : "tap to copy").font(.caption).foregroundColor(.gray)
                             }
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
@@ -68,28 +59,20 @@ struct GroupFeedView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
 
-                        // Unlock time
                         HStack(spacing: 6) {
-                            Image(systemName: "lock.fill")
-                                .font(.caption2)
-                                .foregroundColor(.gray)
-                            Text(unlockLabel)
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                            Image(systemName: "lock.fill").font(.caption2).foregroundColor(.gray)
+                            Text(unlockLabel).font(.caption).foregroundColor(.gray)
                             Spacer()
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 16)
 
-                        // Photo grid
                         if photos.isEmpty {
                             VStack(spacing: 12) {
                                 Spacer().frame(height: 60)
-                                Text("no photos yet")
-                                    .foregroundColor(.gray)
+                                Text("no photos yet").foregroundColor(.gray)
                                 Text("be the first to capture the night")
-                                    .font(.caption)
-                                    .foregroundColor(.gray.opacity(0.6))
+                                    .font(.caption).foregroundColor(.gray.opacity(0.6))
                             }
                             .frame(maxWidth: .infinity)
                         } else {
@@ -97,18 +80,18 @@ struct GroupFeedView: View {
                                 ForEach(photos) { photo in
                                     PhotoGridCell(photo: photo)
                                         .onTapGesture {
-                                            if !photo.locked {
-                                                selectedPhoto = photo
-                                            }
+                                            if !photo.locked { selectedPhoto = photo }
                                         }
                                 }
                             }
                         }
                     }
                 }
+                .refreshable {
+                    await loadPhotos()
+                }
             }
 
-            // Camera button
             VStack {
                 Spacer()
                 Button {
@@ -128,9 +111,7 @@ struct GroupFeedView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showingMembers = true
-                } label: {
+                Button { showingMembers = true } label: {
                     Image(systemName: "person.2.fill")
                 }
             }
@@ -170,9 +151,7 @@ struct PhotoGridCell: View {
 
             if let url = photo.url, let imageURL = URL(string: url) {
                 AsyncImage(url: imageURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
+                    image.resizable().scaledToFill()
                 } placeholder: {
                     Color.white.opacity(0.05)
                 }

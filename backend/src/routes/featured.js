@@ -19,44 +19,24 @@ async function attachUrl(photo) {
 }
 
 /**
- * GET /featured/:username
- * Get a user's featured 3x3 grid (public)
- * Returns all 9 slots — empty slots have photo: null
+ * GET /featured/me/library
+ * Get all unlocked photos this user has taken — for picking featured photos
  */
-router.get('/:username', auth, async (req, res, next) => {
+router.get('/me/library', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+
   try {
-    const { rows: userRows } = await pool.query(
-      'SELECT id FROM users WHERE LOWER(username) = $1',
-      [req.params.username.toLowerCase()]
-    );
-    if (userRows.length === 0) return res.status(404).json({ error: 'User not found' });
-    const userId = userRows[0].id;
-
     const { rows } = await pool.query(
-      `SELECT fp.position, p.id, p.s3_key, p.locked, p.captured_at
-       FROM featured_photos fp
-       LEFT JOIN photos p ON p.id = fp.photo_id
-       WHERE fp.user_id = $1
-       ORDER BY fp.position ASC`,
-      [userId]
+      `SELECT p.*, g.name AS group_name
+       FROM photos p
+       JOIN groups g ON g.id = p.group_id
+       WHERE p.user_id = $1 AND p.locked = FALSE
+       ORDER BY p.captured_at DESC`,
+      [req.user.id]
     );
 
-    // Build full 9-slot grid
-    const grid = Array.from({ length: 9 }, (_, i) => {
-      const slot = rows.find(r => r.position === i + 1);
-      return { position: i + 1, photo: slot?.id ? slot : null };
-    });
-
-    // Attach presigned URLs for filled slots
-    const gridWithUrls = await Promise.all(
-      grid.map(async (slot) => {
-        if (!slot.photo || slot.photo.locked) return slot;
-        const withUrl = await attachUrl(slot.photo);
-        return { ...slot, photo: withUrl };
-      })
-    );
-
-    res.json({ grid: gridWithUrls });
+    const withUrls = await Promise.all(rows.map(attachUrl));
+    res.json({ photos: withUrls });
   } catch (err) { next(err); }
 });
 
@@ -112,24 +92,44 @@ router.put('/me/:position', auth, async (req, res, next) => {
 });
 
 /**
- * GET /featured/me/library
- * Get all unlocked photos this user has taken — for picking featured photos
+ * GET /featured/:username
+ * Get a user's featured 3x3 grid (public)
+ * Returns all 9 slots — empty slots have photo: null
  */
-router.get('/me/library', auth, async (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: 'Not registered' });
-
+router.get('/:username', auth, async (req, res, next) => {
   try {
+    const { rows: userRows } = await pool.query(
+      'SELECT id FROM users WHERE LOWER(username) = $1',
+      [req.params.username.toLowerCase()]
+    );
+    if (userRows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const userId = userRows[0].id;
+
     const { rows } = await pool.query(
-      `SELECT p.*, g.name AS group_name
-       FROM photos p
-       JOIN groups g ON g.id = p.group_id
-       WHERE p.user_id = $1 AND p.locked = FALSE
-       ORDER BY p.captured_at DESC`,
-      [req.user.id]
+      `SELECT fp.position, p.id, p.s3_key, p.locked, p.captured_at
+       FROM featured_photos fp
+       LEFT JOIN photos p ON p.id = fp.photo_id
+       WHERE fp.user_id = $1
+       ORDER BY fp.position ASC`,
+      [userId]
     );
 
-    const withUrls = await Promise.all(rows.map(attachUrl));
-    res.json({ photos: withUrls });
+    // Build full 9-slot grid
+    const grid = Array.from({ length: 9 }, (_, i) => {
+      const slot = rows.find(r => r.position === i + 1);
+      return { position: i + 1, photo: slot?.id ? slot : null };
+    });
+
+    // Attach presigned URLs for filled slots
+    const gridWithUrls = await Promise.all(
+      grid.map(async (slot) => {
+        if (!slot.photo || slot.photo.locked) return slot;
+        const withUrl = await attachUrl(slot.photo);
+        return { ...slot, photo: withUrl };
+      })
+    );
+
+    res.json({ grid: gridWithUrls });
   } catch (err) { next(err); }
 });
 
