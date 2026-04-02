@@ -33,3 +33,6 @@ frontend/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 .DS_Store
 Thumbs.db
 *.log
+
+AuthKey_338KC436TR.p8
+*.p8
