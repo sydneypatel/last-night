@@ -2,12 +2,14 @@ import SwiftUI
 
 struct GroupFeedView: View {
     let group: Group
+    @Environment(\.dismiss) var dismiss
     @State private var photos: [Photo] = []
     @State private var isLoading = true
     @State private var showingCamera = false
     @State private var showCopied = false
     @State private var showingMembers = false
     @State private var selectedPhotoIndex: Int?
+    @State private var showingLeaveConfirm = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 2),
@@ -118,10 +120,27 @@ struct GroupFeedView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showingMembers = true } label: {
-                    Image(systemName: "person.2.fill")
+                Menu {
+                    Button { showingMembers = true } label: {
+                        Label("members", systemImage: "person.2.fill")
+                    }
+                    if group.role != .owner {
+                        Button(role: .destructive) {
+                            showingLeaveConfirm = true
+                        } label: {
+                            Label("leave group", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
                 }
             }
+        }
+        .alert("leave \(group.name)?", isPresented: $showingLeaveConfirm) {
+            Button("leave group", role: .destructive) { leaveGroup() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("you won't be able to see this group's photos anymore.")
         }
         .task { await loadPhotos() }
         .fullScreenCover(isPresented: $showingCamera) {
@@ -149,6 +168,17 @@ struct GroupFeedView: View {
             print("Error loading photos:", error)
         }
         isLoading = false
+    }
+
+    private func leaveGroup() {
+        Task {
+            do {
+                try await APIClient.shared.leaveGroup(id: group.id)
+                dismiss()
+            } catch {
+                print("Error leaving group:", error)
+            }
+        }
     }
 }
 

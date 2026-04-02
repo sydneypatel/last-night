@@ -8,6 +8,7 @@ const photoRoutes   = require('./routes/photos');
 const libraryRoutes = require('./routes/library');
 const userRoutes = require('./routes/users');
 const featuredRoutes = require('./routes/featured');
+const notificationRoutes = require('./routes/notifications');
 
 const errorHandler  = require('./middleware/errorHandler');
 
@@ -24,6 +25,7 @@ app.use('/photos',  photoRoutes);
 app.use('/library', libraryRoutes);
 app.use('/users', userRoutes);
 app.use('/featured', featuredRoutes);
+app.use('/notifications', notificationRoutes);
 
 app.use(errorHandler);
 

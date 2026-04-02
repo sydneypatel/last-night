@@ -35,10 +35,19 @@ class AppState: ObservableObject {
             self.currentUser = user
             self.isAuthenticated = true
         } catch APIError.notFound {
-            // User exists in Firebase but not in our DB yet — needs registration
+            // New user — needs registration
+            self.currentUser = nil
             self.isAuthenticated = false
+        } catch APIError.unauthorized {
+            // Token not ready yet — retry once after short delay
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            await syncUser(firebaseUser: firebaseUser)
+            return
         } catch {
             print("Sync error:", error)
+            // Don't leave user stuck on loading screen
+            self.currentUser = nil
+            self.isAuthenticated = false
         }
         self.isLoading = false
     }

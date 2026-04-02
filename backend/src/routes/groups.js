@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const auth = require('../middleware/auth');
+const { sendPush } = require('../config/apns');
 
 function getNextSunrise(timezone) {
   const tomorrow = new Date();
@@ -47,7 +48,6 @@ router.post('/', auth, async (req, res, next) => {
   if (!validModes.includes(unlockMode)) return res.status(400).json({ error: 'invalid unlockMode' });
   if (unlockMode === 'custom' && !unlockAt) return res.status(400).json({ error: 'unlockAt is required for custom mode' });
 
-  // Calculate unlock time based on mode
   let resolvedUnlockAt = unlockAt || null;
   if (unlockMode === 'sunrise') {
     resolvedUnlockAt = getNextSunrise(timezone);
@@ -119,6 +119,27 @@ router.post('/join', auth, async (req, res, next) => {
       `INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, 'member')`,
       [group.id, req.user.id]
     );
+
+    // Notify group owner
+    try {
+      const { rows: ownerTokens } = await pool.query(
+        `SELECT dt.token FROM device_tokens dt
+         JOIN group_members gm ON gm.user_id = dt.user_id
+         WHERE gm.group_id = $1 AND gm.role = 'owner'`,
+        [group.id]
+      );
+      for (const { token } of ownerTokens) {
+        await sendPush(
+          token,
+          group.name,
+          `${req.user.display_name} joined your group`,
+          { type: 'member_joined', groupId: group.id }
+        );
+      }
+    } catch (pushErr) {
+      console.error('Push notification failed (non-fatal):', pushErr);
+    }
+
     res.status(201).json({ group });
   } catch (err) { next(err); }
 });

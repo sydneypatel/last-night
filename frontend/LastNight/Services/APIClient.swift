@@ -106,6 +106,16 @@ class APIClient {
         let _: EmptyResponse = try await request(path: "/auth/account", method: "DELETE")
     }
 
+    // MARK: - Notifications
+    
+    func registerDeviceToken(_ token: String) async throws {
+        let _: EmptyResponse = try await request(
+            path: "/notifications/device-token",
+            method: "POST",
+            body: ["token": token]
+        )
+    }
+    
     // MARK: - Groups
 
     func getGroups() async throws -> [Group] {
@@ -156,6 +166,10 @@ class APIClient {
             body: ["coverUrl": coverUrl]
         )
         return response.group
+    }
+    
+    func leaveGroup(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/groups/\(id)/leave", method: "DELETE")
     }
 
     // MARK: - Photos
