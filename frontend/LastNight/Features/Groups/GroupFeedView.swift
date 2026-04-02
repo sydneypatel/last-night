@@ -9,7 +9,11 @@ struct GroupFeedView: View {
     @State private var showingMembers = false
     @State private var selectedPhotoIndex: Int?
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2)
+    ]
 
     private var unlockLabel: String {
         switch group.unlockMode {
@@ -86,6 +90,7 @@ struct GroupFeedView: View {
                                         }
                                 }
                             }
+                            .padding(0)
                         }
                     }
                 }
@@ -151,25 +156,28 @@ struct PhotoGridCell: View {
     let photo: Photo
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.white.opacity(0.05))
-                .aspectRatio(1, contentMode: .fit)
+        GeometryReader { geo in
+            ZStack {
+                Color.white.opacity(0.05)
 
-            if let url = photo.url, let imageURL = URL(string: url) {
-                AsyncImage(url: imageURL) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color.white.opacity(0.05)
+                if let url = photo.url, let imageURL = URL(string: url) {
+                    AsyncImage(url: imageURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.width)
+                            .clipped()
+                            .blur(radius: photo.locked ? 12 : 0)
+                    } placeholder: {
+                        Color.white.opacity(0.05)
+                    }
                 }
-                .clipped()
-                .blur(radius: photo.locked ? 12 : 0)
-            }
 
-            if photo.locked {
-                Image(systemName: "lock.fill")
-                    .foregroundColor(.white.opacity(0.6))
-                    .font(.title3)
+                if photo.locked {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.white.opacity(0.6))
+                        .font(.title3)
+                }
             }
         }
         .aspectRatio(1, contentMode: .fit)

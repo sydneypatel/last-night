@@ -1,38 +1,36 @@
-//
-//  LibraryDetailView.swift
-//  LastNight
-//
-//  Created by Sydney Patel on 4/1/26.
-//
-
-
 import SwiftUI
 import Photos
 
 struct LibraryDetailView: View {
-    let photo: Photo
+    let photos: [Photo]
+    let startIndex: Int
     @Environment(\.dismiss) var dismiss
+    @State private var currentIndex: Int
     @State private var showSavedToast = false
     @State private var toastMessage = ""
     @State private var isSavingToPhotos = false
     @State private var showingPinSheet = false
-    @State private var featuredSlots: [LNFeaturedSlot] = []
-    @State private var isLoadingSlots = false
+
+    init(photos: [Photo], startIndex: Int) {
+        self.photos = photos
+        self.startIndex = startIndex
+        _currentIndex = State(initialValue: startIndex)
+    }
+
+    var currentPhoto: Photo { photos[currentIndex] }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let url = photo.url, let imageURL = URL(string: url) {
-                AsyncImage(url: imageURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } placeholder: {
-                    ProgressView().tint(.white)
+            TabView(selection: $currentIndex) {
+                ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
+                    LibraryPhotoPageView(photo: photo)
+                        .tag(index)
                 }
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .ignoresSafeArea()
 
             VStack {
                 // Top bar
@@ -48,6 +46,11 @@ struct LibraryDetailView: View {
                             .clipShape(Circle())
                     }
                     Spacer()
+                    Text("\(currentIndex + 1) / \(photos.count)")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                    Spacer()
+                    Color.clear.frame(width: 44, height: 44)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -55,7 +58,14 @@ struct LibraryDetailView: View {
                 Spacer()
 
                 // Bottom actions
-                VStack(spacing: 12) {
+                VStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.8)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 60)
+
                     HStack(spacing: 12) {
                         // Save to camera roll
                         Button {
@@ -102,13 +112,13 @@ struct LibraryDetailView: View {
                     // Photo info
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            if let username = photo.username {
+                            if let username = currentPhoto.username {
                                 Text("@\(username)")
                                     .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.white)
                             }
-                            if let capturedAt = photo.capturedAt {
+                            if let capturedAt = currentPhoto.capturedAt {
                                 Text(capturedAt.formatted(date: .abbreviated, time: .shortened))
                                     .font(.caption)
                                     .foregroundColor(.gray)
@@ -116,16 +126,11 @@ struct LibraryDetailView: View {
                         }
                         Spacer()
                     }
+                    .padding(.top, 8)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 48)
-                .background(
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.8)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .background(Color.black)
             }
 
             // Toast
@@ -139,16 +144,17 @@ struct LibraryDetailView: View {
                         .padding(.vertical, 10)
                         .background(Color.white.opacity(0.15))
                         .cornerRadius(20)
-                        .padding(.bottom, 140)
+                        .padding(.bottom, 160)
                 }
                 .transition(.opacity)
             }
         }
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showingPinSheet) {
-            PinToFeaturedSheet(photo: photo, onPinned: {
+            PinToFeaturedSheet(photo: currentPhoto, onPinned: {
                 showToast("pinned to your profile!")
             })
+            .environmentObject(AppState())
         }
     }
 
@@ -162,11 +168,10 @@ struct LibraryDetailView: View {
 
     private func saveToCameraRoll() {
         isSavingToPhotos = true
-        guard let url = photo.url, let imageURL = URL(string: url) else {
+        guard let url = currentPhoto.url, let imageURL = URL(string: url) else {
             isSavingToPhotos = false
             return
         }
-
         Task {
             do {
                 let (data, _) = try await URLSession.shared.data(from: imageURL)
@@ -174,8 +179,6 @@ struct LibraryDetailView: View {
                     await MainActor.run { isSavingToPhotos = false }
                     return
                 }
-
-                // Request photo library permission
                 let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
                 guard status == .authorized || status == .limited else {
                     await MainActor.run {
@@ -184,11 +187,9 @@ struct LibraryDetailView: View {
                     }
                     return
                 }
-
                 try await PHPhotoLibrary.shared().performChanges {
                     PHAssetChangeRequest.creationRequestForAsset(from: image)
                 }
-
                 await MainActor.run {
                     isSavingToPhotos = false
                     showToast("saved to camera roll!")
@@ -197,6 +198,26 @@ struct LibraryDetailView: View {
                 await MainActor.run {
                     isSavingToPhotos = false
                     showToast("couldn't save, try again")
+                }
+            }
+        }
+    }
+}
+
+struct LibraryPhotoPageView: View {
+    let photo: Photo
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if let url = photo.url, let imageURL = URL(string: url) {
+                AsyncImage(url: imageURL) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } placeholder: {
+                    ProgressView().tint(.white)
                 }
             }
         }
@@ -224,13 +245,11 @@ struct PinToFeaturedSheet: View {
         NavigationStack {
             ZStack {
                 Color.black.ignoresSafeArea()
-
                 VStack(spacing: 16) {
                     Text("choose a slot")
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.top, 8)
-
                     if isLoading {
                         ProgressView().tint(.white)
                     } else {
@@ -243,9 +262,7 @@ struct PinToFeaturedSheet: View {
                                         Rectangle()
                                             .fill(Color.white.opacity(0.05))
                                             .aspectRatio(1, contentMode: .fit)
-
                                         if slot.photo != nil {
-                                            // show replace indicator
                                             Color.white.opacity(0.3)
                                             Image(systemName: "arrow.triangle.2.circlepath")
                                                 .foregroundColor(.white)

@@ -22,5 +22,9 @@
     </dict>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Last Night needs access to save photos to your camera roll.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Last Night uses your camera to capture photos for your group.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Last Night needs access to your photo library.</string>
 </dict>
 </plist>

@@ -139,6 +139,24 @@ class APIClient {
     func leaveOrDeleteGroup(id: String) async throws {
         let _: EmptyResponse = try await request(path: "/groups/\(id)", method: "DELETE")
     }
+    
+    func getCoverUploadURL(groupId: String) async throws -> (uploadUrl: String, key: String) {
+        struct CoverURLResponse: Decodable { let uploadUrl: String; let key: String }
+        let response: CoverURLResponse = try await request(
+            path: "/groups/\(groupId)/cover-upload-url",
+            method: "POST"
+        )
+        return (response.uploadUrl, response.key)
+    }
+
+    func updateGroupCover(groupId: String, coverUrl: String) async throws -> Group {
+        let response: GroupResponse = try await request(
+            path: "/groups/\(groupId)/cover",
+            method: "PATCH",
+            body: ["coverUrl": coverUrl]
+        )
+        return response.group
+    }
 
     // MARK: - Photos
 

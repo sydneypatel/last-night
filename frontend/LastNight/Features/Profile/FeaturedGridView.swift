@@ -28,20 +28,21 @@ struct FeaturedSlotCell: View {
     let isOwner: Bool
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.white.opacity(0.05))
-                .aspectRatio(1, contentMode: .fit)
+        GeometryReader { geo in
+            ZStack {
+                Color.white.opacity(0.05)
 
-            if let photo = slot.photo, let url = photo.url, let imageURL = URL(string: url) {
-                AsyncImage(url: imageURL) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color.white.opacity(0.05)
-                }
-                .clipped()
-            } else {
-                VStack(spacing: 4) {
+                if let photo = slot.photo, let url = photo.url, let imageURL = URL(string: url) {
+                    AsyncImage(url: imageURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.width)
+                            .clipped()
+                    } placeholder: {
+                        Color.white.opacity(0.05)
+                    }
+                } else {
                     if isOwner {
                         Image(systemName: "plus")
                             .font(.system(size: 20))

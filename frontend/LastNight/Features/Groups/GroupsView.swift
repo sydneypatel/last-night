@@ -160,13 +160,24 @@ struct GroupRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.08))
-                .frame(width: 56, height: 56)
-                .overlay(
+            // Cover photo or fallback
+            ZStack {
+                if let urlStr = group.coverPhotoUrl, let url = URL(string: urlStr) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Color.white.opacity(0.08)
+                    }
+                } else {
+                    Color.white.opacity(0.08)
                     Image(systemName: "moon.stars.fill")
                         .foregroundColor(.white.opacity(0.4))
-                )
+                }
+            }
+            .frame(width: 56, height: 56)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(group.name)

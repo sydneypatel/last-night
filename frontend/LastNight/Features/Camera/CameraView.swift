@@ -34,22 +34,6 @@ struct CameraView: View {
 
                 VStack {
                     HStack {
-                        CornerBracket().frame(width: 30, height: 30)
-                        Spacer()
-                        CornerBracket().rotationEffect(.degrees(90)).frame(width: 30, height: 30)
-                    }
-                    Spacer()
-                    HStack {
-                        CornerBracket().rotationEffect(.degrees(270)).frame(width: 30, height: 30)
-                        Spacer()
-                        CornerBracket().rotationEffect(.degrees(180)).frame(width: 30, height: 30)
-                    }
-                }
-                .padding(32)
-                .opacity(0.5)
-
-                VStack {
-                    HStack {
                         Button {
                             viewModel.stopSession()
                             dismiss()
@@ -129,11 +113,9 @@ struct CameraView: View {
                     return
                 }
 
-                // Get one presigned URL for the full image
                 let urlResponse = try await APIClient.shared.getUploadURL(groupId: groupId)
                 try await uploadToS3(data: imageData, url: urlResponse.uploadUrl)
 
-                // Confirm with backend — use same key for thumbnail for now
                 let photo = try await APIClient.shared.confirmUpload(
                     groupId: groupId,
                     s3Key: urlResponse.s3Key,
@@ -195,6 +177,7 @@ struct PhotoPreviewView: View {
                 }
 
                 HStack(spacing: 16) {
+                    // Retake — no white outline
                     Button {
                         onRetake()
                     } label: {
@@ -202,49 +185,34 @@ struct PhotoPreviewView: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Color.black)
+                            .frame(width: 120, height: 44)
+                            .background(Color.white.opacity(0.15))
                             .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.white, lineWidth: 1)
-                            )
                     }
                     .disabled(isUploading)
 
+                    // Use photo — fixed size so spinner doesn't shrink it
                     Button {
                         onUse()
                     } label: {
-                        if isUploading {
-                            ProgressView().tint(.black)
-                        } else {
-                            Text("use photo")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.black)
+                        ZStack {
+                            if isUploading {
+                                ProgressView().tint(.black)
+                            } else {
+                                Text("use photo")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.black)
+                            }
                         }
+                        .frame(width: 120, height: 44)
+                        .background(Color.white)
+                        .cornerRadius(20)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .cornerRadius(20)
                     .disabled(isUploading)
                 }
                 .padding(.bottom, 48)
             }
-        }
-    }
-}
-
-struct CornerBracket: View {
-    var body: some View {
-        Canvas { context, size in
-            var path = Path()
-            path.move(to: CGPoint(x: 0, y: size.height))
-            path.addLine(to: CGPoint(x: 0, y: 0))
-            path.addLine(to: CGPoint(x: size.width, y: 0))
-            context.stroke(path, with: .color(.white), lineWidth: 2)
         }
     }
 }
