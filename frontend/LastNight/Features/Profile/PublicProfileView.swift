@@ -59,7 +59,7 @@ struct PublicProfileView: View {
                     .padding(.bottom, 20)
 
                     HStack {
-                        Text("top nights:")
+                        Text("my favorites:")
                             .font(.headline)
                             .foregroundColor(.white)
                         Spacer()
