@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import MediaPlayer
 
 struct CameraView: View {
     let groupId: String
@@ -8,21 +9,22 @@ struct CameraView: View {
     @StateObject private var viewModel = CameraViewModel()
     @State private var isUploading = false
     @State private var uploadError: String?
-    @State private var showPreview = false
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let preview = viewModel.capturedImage, showPreview {
+            if let preview = viewModel.capturedImage {
                 PhotoPreviewView(
                     image: preview,
                     isUploading: isUploading,
                     uploadError: uploadError,
                     onRetake: {
                         viewModel.capturedImage = nil
-                        showPreview = false
                         uploadError = nil
+                        Task.detached { [weak viewModel] in
+                            viewModel?.session.startRunning()
+                        }
                     },
                     onUse: {
                         uploadPhoto(image: preview)
@@ -68,9 +70,6 @@ struct CameraView: View {
 
                     Button {
                         viewModel.capturePhoto()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showPreview = true
-                        }
                     } label: {
                         ZStack {
                             Circle()
@@ -94,11 +93,38 @@ struct CameraView: View {
                 }
             }
         }
+        .onAppear {
+            setupVolumeButtons()
+        }
         .onDisappear {
             viewModel.stopSession()
+            teardownVolumeButtons()
         }
     }
 
+    // MARK: - Volume button shutter
+    private func setupVolumeButtons() {
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setActive(true)
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("AVSystemController_SystemVolumeDidChangeNotification"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard viewModel.capturedImage == nil, !viewModel.isCapturing else { return }
+            viewModel.capturePhoto()
+        }
+    }
+
+    private func teardownVolumeButtons() {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSNotification.Name("AVSystemController_SystemVolumeDidChangeNotification"),
+            object: nil
+        )
+    }
+
+    // MARK: - Upload
     private func uploadPhoto(image: UIImage) {
         isUploading = true
         uploadError = nil
@@ -177,7 +203,6 @@ struct PhotoPreviewView: View {
                 }
 
                 HStack(spacing: 16) {
-                    // Retake — no white outline
                     Button {
                         onRetake()
                     } label: {
@@ -191,7 +216,6 @@ struct PhotoPreviewView: View {
                     }
                     .disabled(isUploading)
 
-                    // Use photo — fixed size so spinner doesn't shrink it
                     Button {
                         onUse()
                     } label: {

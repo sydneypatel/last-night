@@ -34,7 +34,7 @@ async function getApnsToken() {
 
 async function sendPush(deviceToken, title, body, data = {}) {
   const token = await getApnsToken();
-  const url = `https://api.sandbox.push.apple.com/3/device/${deviceToken}`;
+  const url = `https://api.push.apple.com/3/device/${deviceToken}`;
 
   const payload = {
     aps: {

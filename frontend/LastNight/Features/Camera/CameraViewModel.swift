@@ -1,10 +1,3 @@
-//
-//  CameraViewModel.swift
-//  LastNight
-//
-//  Created by Sydney Patel on 3/31/26.
-//
-
 import AVFoundation
 import UIKit
 import Combine
@@ -94,7 +87,18 @@ extension CameraViewModel: AVCapturePhotoCaptureDelegate {
               let image = UIImage(data: data) else { return }
 
         Task { @MainActor in
-            self.capturedImage = image
+            // Fix front camera mirror flip
+            let finalImage: UIImage
+            if self.isFrontCamera {
+                if let cgImage = image.cgImage {
+                    finalImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: .leftMirrored)
+                } else {
+                    finalImage = image
+                }
+            } else {
+                finalImage = image
+            }
+            self.capturedImage = finalImage
             self.isCapturing = false
         }
     }
