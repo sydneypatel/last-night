@@ -108,11 +108,11 @@ class APIClient {
 
     // MARK: - Notifications
     
-    func registerDeviceToken(_ token: String) async throws {
+    func registerDeviceToken(_ token: String, environment: String) async throws {
         let _: EmptyResponse = try await request(
             path: "/notifications/device-token",
             method: "POST",
-            body: ["token": token]
+            body: ["token": token, "environment": environment]
         )
     }
     

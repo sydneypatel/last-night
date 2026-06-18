@@ -49,8 +49,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
         print("✅ Device token:", token)
+        #if DEBUG
+        let environment = "sandbox"
+        #else
+        let environment = "production"
+        #endif
         Task {
-            try? await APIClient.shared.registerDeviceToken(token)
+            try? await APIClient.shared.registerDeviceToken(token, environment: environment)
         }
     }
 

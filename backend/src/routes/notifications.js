@@ -5,14 +5,17 @@ const auth = require('../middleware/auth');
 
 router.post('/device-token', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
-  const { token } = req.body;
+  const { token, environment = 'production' } = req.body;
   if (!token) return res.status(400).json({ error: 'token is required' });
+  if (!['sandbox', 'production'].includes(environment)) {
+    return res.status(400).json({ error: 'invalid environment' });
+  }
   try {
     await pool.query(
-      `INSERT INTO device_tokens (user_id, token)
-       VALUES ($1, $2)
-       ON CONFLICT (token) DO UPDATE SET user_id = $1`,
-      [req.user.id, token]
+      `INSERT INTO device_tokens (user_id, token, environment)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (token) DO UPDATE SET user_id = $1, environment = $3`,
+      [req.user.id, token, environment]
     );
     res.json({ success: true });
   } catch (err) { next(err); }
