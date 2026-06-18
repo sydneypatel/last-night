@@ -9,7 +9,7 @@ const pool = new Pool({
 
 async function getApnsToken() {
   const keyContent = process.env.APNS_KEY_CONTENT.replace(/\\n/g, '\n');
-  
+
   const pemBody = keyContent
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
@@ -39,9 +39,13 @@ async function getApnsToken() {
   return `${signingInput}.${sigBase64}`;
 }
 
-async function sendPush(deviceToken, title, body, data = {}) {
+// environment: 'sandbox' or 'production'
+async function sendPush(deviceToken, environment, title, body, data = {}) {
   const token = await getApnsToken();
-  const url = `https://api.sandbox.push.apple.com/3/device/${deviceToken}`;
+  const host = environment === 'production'
+    ? 'api.push.apple.com'
+    : 'api.sandbox.push.apple.com';
+  const url = `https://${host}/3/device/${deviceToken}`;
 
   const payload = {
     aps: {
@@ -65,8 +69,16 @@ async function sendPush(deviceToken, title, body, data = {}) {
 
   if (!res.ok) {
     const err = await res.json();
-    console.error('APNs error:', err);
+    console.error(`APNs error (${environment}):`, err);
   }
+}
+
+// Computes tomorrow 6:30 AM in the group's local timezone, returned as a UTC Date
+function getNextSunriseInTimezone(timezone) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString('en-US', { timeZone: timezone });
+  return new Date(`${tomorrowStr} 06:30:00 ${timezone}`);
 }
 
 exports.handler = async (event) => {
@@ -108,7 +120,7 @@ exports.handler = async (event) => {
       console.log(`Unlocked ${rowCount} photos in group: ${group.name}`);
 
       const { rows: members } = await client.query(`
-        SELECT u.id, u.display_name, dt.token
+        SELECT u.id, u.display_name, dt.token, dt.environment
         FROM group_members gm
         JOIN users u ON u.id = gm.user_id
         LEFT JOIN device_tokens dt ON dt.user_id = u.id
@@ -120,6 +132,7 @@ exports.handler = async (event) => {
           try {
             await sendPush(
               member.token,
+              member.environment || 'production',
               `${group.name} 📸`,
               `last night's photos just unlocked!`,
               { type: 'photos_unlocked', groupId: group.id }
@@ -138,12 +151,10 @@ exports.handler = async (event) => {
       });
 
       if (group.unlock_mode === 'sunrise') {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(6, 30, 0, 0);
+        const nextUnlock = getNextSunriseInTimezone(group.timezone);
         await client.query(`
           UPDATE groups SET unlock_at = $1 WHERE id = $2
-        `, [tomorrow.toISOString(), group.id]);
+        `, [nextUnlock.toISOString(), group.id]);
       }
     }
 
