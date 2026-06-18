@@ -23,24 +23,27 @@ class CameraViewModel: NSObject, ObservableObject {
             error = "Camera access denied. Go to Settings to enable."
             return
         }
-
         session.beginConfiguration()
         session.sessionPreset = .photo
-
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
               let input = try? AVCaptureDeviceInput(device: device) else {
             error = "Could not access camera."
             return
         }
-
         if session.canAddInput(input) { session.addInput(input) }
         if session.canAddOutput(photoOutput) { session.addOutput(photoOutput) }
         currentInput = input
-
         session.commitConfiguration()
 
         Task.detached { [weak self] in
-            self?.session.startRunning()
+            guard let self else { return }
+            self.session.startRunning()
+            await MainActor.run {
+                if let connection = self.photoOutput.connection(with: .video),
+                   connection.isVideoRotationAngleSupported(90) {
+                    connection.videoRotationAngle = 90
+                }
+            }
         }
     }
 
@@ -57,7 +60,6 @@ class CameraViewModel: NSObject, ObservableObject {
         let position: AVCaptureDevice.Position = isFrontCamera ? .back : .front
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let newInput = try? AVCaptureDeviceInput(device: device) else { return }
-
         session.beginConfiguration()
         if let current = currentInput { session.removeInput(current) }
         if session.canAddInput(newInput) { session.addInput(newInput) }
@@ -80,25 +82,15 @@ class CameraViewModel: NSObject, ObservableObject {
 }
 
 extension CameraViewModel: AVCapturePhotoCaptureDelegate {
-    nonisolated func photoOutput(_ output: AVCapturePhotoOutput,
-                                 didFinishProcessingPhoto photo: AVCapturePhoto,
-                                 error: Error?) {
+    nonisolated func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+    ) {
         guard let data = photo.fileDataRepresentation(),
               let image = UIImage(data: data) else { return }
-
         Task { @MainActor in
-            // Fix front camera mirror flip
-            let finalImage: UIImage
-            if self.isFrontCamera {
-                if let cgImage = image.cgImage {
-                    finalImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: .leftMirrored)
-                } else {
-                    finalImage = image
-                }
-            } else {
-                finalImage = image
-            }
-            self.capturedImage = finalImage
+            self.capturedImage = image
             self.isCapturing = false
         }
     }

@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import MediaPlayer
+import Combine
 
 struct CameraView: View {
     let groupId: String
@@ -33,6 +34,7 @@ struct CameraView: View {
             } else {
                 CameraPreview(session: viewModel.session)
                     .ignoresSafeArea()
+                .ignoresSafeArea()
 
                 VStack {
                     HStack {
@@ -131,14 +133,11 @@ struct CameraView: View {
 
         Task {
             do {
-                let filtered = PhotoFilter.applyDigiCamFilter(to: image)
-
-                guard let imageData = PhotoFilter.toJPEGData(filtered) else {
+                guard let imageData = image.jpegData(compressionQuality: 0.85) else {
                     await MainActor.run { uploadError = "Failed to process photo" }
                     isUploading = false
                     return
                 }
-
                 let urlResponse = try await APIClient.shared.getUploadURL(groupId: groupId)
                 try await uploadToS3(data: imageData, url: urlResponse.uploadUrl)
 
@@ -185,12 +184,14 @@ struct PhotoPreviewView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .ignoresSafeArea()
+            GeometryReader { geo in
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+            }
+            .ignoresSafeArea()
 
             VStack {
                 Spacer()
@@ -211,7 +212,7 @@ struct PhotoPreviewView: View {
                             .fontWeight(.medium)
                             .foregroundColor(.white)
                             .frame(width: 120, height: 44)
-                            .background(Color.white.opacity(0.15))
+                            .background(Color.black.opacity(0.7))
                             .cornerRadius(20)
                     }
                     .disabled(isUploading)

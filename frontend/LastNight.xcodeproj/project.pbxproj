@@ -6,13 +6,35 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EB228C8A2FE46003006875D7 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C892FE46003006875D7 /* FirebaseAuth */; };
+		EB228C8C2FE46003006875D7 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C8B2FE46003006875D7 /* FirebaseCore */; };
+		EB228C8E2FE46003006875D7 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C8D2FE46003006875D7 /* FirebaseFirestore */; };
+		EB228C912FE46030006875D7 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C902FE46030006875D7 /* GoogleSignIn */; };
+		EB228C932FE46030006875D7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C922FE46030006875D7 /* GoogleSignInSwift */; };
+		EB228C962FE4605E006875D7 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C952FE4605E006875D7 /* Kingfisher */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		EBFBCEE72F7B055E00855A91 /* LastNight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LastNight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		EBFBCF352F7B170A00855A91 /* Exceptions for "LastNight" folder in "LastNight" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = EBFBCEE62F7B055E00855A91 /* LastNight */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EBFBCEE92F7B055E00855A91 /* LastNight */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EBFBCF352F7B170A00855A91 /* Exceptions for "LastNight" folder in "LastNight" target */,
+			);
 			path = LastNight;
 			sourceTree = "<group>";
 		};
@@ -23,6 +45,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB228C962FE4605E006875D7 /* Kingfisher in Frameworks */,
+				EB228C932FE46030006875D7 /* GoogleSignInSwift in Frameworks */,
+				EB228C8C2FE46003006875D7 /* FirebaseCore in Frameworks */,
+				EB228C912FE46030006875D7 /* GoogleSignIn in Frameworks */,
+				EB228C8A2FE46003006875D7 /* FirebaseAuth in Frameworks */,
+				EB228C8E2FE46003006875D7 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +93,12 @@
 			);
 			name = LastNight;
 			packageProductDependencies = (
+				EB228C892FE46003006875D7 /* FirebaseAuth */,
+				EB228C8B2FE46003006875D7 /* FirebaseCore */,
+				EB228C8D2FE46003006875D7 /* FirebaseFirestore */,
+				EB228C902FE46030006875D7 /* GoogleSignIn */,
+				EB228C922FE46030006875D7 /* GoogleSignInSwift */,
+				EB228C952FE4605E006875D7 /* Kingfisher */,
 			);
 			productName = LastNight;
 			productReference = EBFBCEE72F7B055E00855A91 /* LastNight.app */;
@@ -94,6 +128,11 @@
 			);
 			mainGroup = EBFBCEDE2F7B055E00855A91;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EB228C882FE46003006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				EB228C8F2FE46030006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				EB228C942FE4605E006875D7 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EBFBCEE82F7B055E00855A91 /* Products */;
 			projectDirPath = "";
@@ -249,15 +288,23 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LastNight/LastNight.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNS875PGA8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LastNight/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -265,6 +312,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sydneypatel.LastNight;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -280,15 +328,23 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LastNight/LastNight.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNS875PGA8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LastNight/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -296,6 +352,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sydneypatel.LastNight;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -328,6 +385,66 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EB228C882FE46003006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.15.0;
+			};
+		};
+		EB228C8F2FE46030006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.2.0;
+			};
+		};
+		EB228C942FE4605E006875D7 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EB228C892FE46003006875D7 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C882FE46003006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		EB228C8B2FE46003006875D7 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C882FE46003006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		EB228C8D2FE46003006875D7 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C882FE46003006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		EB228C902FE46030006875D7 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C8F2FE46030006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		EB228C922FE46030006875D7 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C8F2FE46030006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		EB228C952FE4605E006875D7 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB228C942FE4605E006875D7 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EBFBCEDF2F7B055E00855A91 /* Project object */;
 }
