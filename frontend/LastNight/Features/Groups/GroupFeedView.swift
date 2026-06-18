@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct GroupFeedView: View {
     let group: Group
@@ -10,6 +11,15 @@ struct GroupFeedView: View {
     @State private var showingMembers = false
     @State private var selectedPhotoIndex: Int?
     @State private var showingLeaveConfirm = false
+    @State private var showingDeleteConfirm = false
+
+    // Cover photo state
+    @State private var currentCoverUrl: String?
+    @State private var showingCoverPhotoSourcePicker = false
+    @State private var showingCoverCamera = false
+    @State private var showingCoverPhotoPicker = false
+    @State private var selectedCoverItem: PhotosPickerItem?
+    @State private var isUploadingCover = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 2),
@@ -33,6 +43,7 @@ struct GroupFeedView: View {
     }
 
     var body: some View {
+        let _ = print("DEBUG group.role:", group.role as Any)
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -115,6 +126,17 @@ struct GroupFeedView: View {
                 }
                 .padding(.bottom, 32)
             }
+
+            if isUploadingCover {
+                VStack {
+                    ProgressView("updating cover photo…")
+                        .tint(.white)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(12)
+                }
+            }
         }
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -124,7 +146,16 @@ struct GroupFeedView: View {
                     Button { showingMembers = true } label: {
                         Label("members", systemImage: "person.2.fill")
                     }
-                    if group.role != .owner {
+                    if group.role == .owner {
+                        Button { showingCoverPhotoSourcePicker = true } label: {
+                            Label("change cover photo", systemImage: "photo")
+                        }
+                        Button(role: .destructive) {
+                            showingDeleteConfirm = true
+                        } label: {
+                            Label("delete group", systemImage: "trash")
+                        }
+                    } else {
                         Button(role: .destructive) {
                             showingLeaveConfirm = true
                         } label: {
@@ -141,6 +172,33 @@ struct GroupFeedView: View {
             Button("cancel", role: .cancel) {}
         } message: {
             Text("you won't be able to see this group's photos anymore.")
+        }
+        .alert("delete \(group.name)?", isPresented: $showingDeleteConfirm) {
+            Button("delete group", role: .destructive) { deleteGroup() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("this will permanently delete the group and all photos for everyone.")
+        }
+        .confirmationDialog("change cover photo", isPresented: $showingCoverPhotoSourcePicker) {
+            Button("take photo") { showingCoverCamera = true }
+            Button("choose from library") { showingCoverPhotoPicker = true }
+            Button("cancel", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $showingCoverPhotoPicker, selection: $selectedCoverItem, matching: .images)
+        .onChange(of: selectedCoverItem) { _, newItem in
+            guard let newItem else { return }
+            Task {
+                if let data = try? await newItem.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    await uploadCoverPhoto(image: image)
+                }
+                selectedCoverItem = nil
+            }
+        }
+        .fullScreenCover(isPresented: $showingCoverCamera) {
+            CoverCameraView { image in
+                Task { await uploadCoverPhoto(image: image) }
+            }
         }
         .task { await loadPhotos() }
         .fullScreenCover(isPresented: $showingCamera) {
@@ -179,6 +237,39 @@ struct GroupFeedView: View {
                 print("Error leaving group:", error)
             }
         }
+    }
+
+    private func deleteGroup() {
+        Task {
+            do {
+                try await APIClient.shared.leaveOrDeleteGroup(id: group.id)
+                dismiss()
+            } catch {
+                print("Error deleting group:", error)
+            }
+        }
+    }
+
+    private func uploadCoverPhoto(image: UIImage) async {
+        guard let imageData = image.jpegData(compressionQuality: 0.85) else { return }
+        isUploadingCover = true
+        do {
+            let urlResponse = try await APIClient.shared.getCoverUploadURL(groupId: group.id)
+            guard let uploadURL = URL(string: urlResponse.uploadUrl) else {
+                isUploadingCover = false
+                return
+            }
+            var request = URLRequest(url: uploadURL)
+            request.httpMethod = "PUT"
+            request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+            _ = try await URLSession.shared.upload(for: request, from: imageData)
+
+            let cdnUrl = "\(Constants.cdnBaseURL)/\(urlResponse.key)"
+            _ = try await APIClient.shared.updateGroupCover(groupId: group.id, coverUrl: cdnUrl)
+        } catch {
+            print("Error uploading cover photo:", error)
+        }
+        isUploadingCover = false
     }
 }
 
