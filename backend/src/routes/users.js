@@ -14,7 +14,11 @@ router.get('/search', auth, async (req, res, next) => {
   if (!q || q.length < 2) return res.status(400).json({ error: 'Query must be at least 2 characters' });
   try {
     const { rows } = await pool.query(
-      `SELECT id, username, display_name, avatar_url FROM users WHERE LOWER(username) LIKE $1 AND id != $2 LIMIT 20`,
+      `SELECT u.id, u.username, u.display_name, u.avatar_url,
+              EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = u.id) AS is_following
+       FROM users u
+       WHERE LOWER(u.username) LIKE $1 AND u.id != $2
+       LIMIT 20`,
       [`${q.toLowerCase()}%`, req.user.id]
     );
     res.json({ users: rows });
@@ -24,11 +28,72 @@ router.get('/search', auth, async (req, res, next) => {
 router.get('/:username', auth, async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, username, display_name, avatar_url, bio, created_at FROM users WHERE LOWER(username) = $1`,
-      [req.params.username.toLowerCase()]
+      `SELECT u.id, u.username, u.display_name, u.avatar_url, u.bio, u.created_at,
+              (SELECT COUNT(*) FROM follows WHERE following_id = u.id) AS follower_count,
+              (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) AS following_count,
+              EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = u.id) AS is_following
+       FROM users u
+       WHERE LOWER(u.username) = $1`,
+      [req.params.username.toLowerCase(), req.user?.id || null]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ user: rows[0] });
+  } catch (err) { next(err); }
+});
+
+router.post('/:id/follow', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  const targetId = req.params.id;
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Cannot follow yourself' });
+  try {
+    const { rows: targetCheck } = await pool.query('SELECT 1 FROM users WHERE id = $1', [targetId]);
+    if (targetCheck.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    await pool.query(
+      `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [req.user.id, targetId]
+    );
+    res.status(201).json({ following: true });
+  } catch (err) { next(err); }
+});
+
+router.delete('/:id/follow', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    await pool.query(
+      'DELETE FROM follows WHERE follower_id = $1 AND following_id = $2',
+      [req.user.id, req.params.id]
+    );
+    res.json({ following: false });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/followers', auth, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.display_name, u.avatar_url
+       FROM follows f
+       JOIN users u ON u.id = f.follower_id
+       WHERE f.following_id = $1
+       ORDER BY f.created_at DESC`,
+      [req.params.id]
+    );
+    res.json({ users: rows });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/following', auth, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.display_name, u.avatar_url
+       FROM follows f
+       JOIN users u ON u.id = f.following_id
+       WHERE f.follower_id = $1
+       ORDER BY f.created_at DESC`,
+      [req.params.id]
+    );
+    res.json({ users: rows });
   } catch (err) { next(err); }
 });
 
