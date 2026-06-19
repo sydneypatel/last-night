@@ -51,6 +51,14 @@ struct UserProfileView: View {
                                 Text("@\(user.username)")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
+                                if let bio = user.bio, !bio.isEmpty {
+                                    Text(bio)
+                                        .font(.subheadline)
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 32)
+                                        .padding(.top, 4)
+                                }
                             }
 
                             HStack(spacing: 24) {

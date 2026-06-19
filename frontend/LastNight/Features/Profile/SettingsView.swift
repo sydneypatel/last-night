@@ -4,8 +4,10 @@ import PhotosUI
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingChangeName = false
+    @State private var showingChangeBio = false
     @State private var showingDeleteAccount = false
     @State private var newDisplayName = ""
+    @State private var newBio = ""
     @State private var errorMessage: String?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isUploadingAvatar = false
@@ -77,6 +79,38 @@ struct SettingsView: View {
                     }
 
                     Button {
+                        newBio = appState.currentUser?.bio ?? ""
+                        showingChangeBio = true
+                    } label: {
+                        HStack(alignment: .top) {
+                            Image(systemName: "text.quote")
+                                .padding(.top, 2)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("edit bio")
+                                if let bio = appState.currentUser?.bio, !bio.isEmpty {
+                                    Text(bio)
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                        .lineLimit(2)
+                                } else {
+                                    Text("add a bio")
+                                        .font(.caption)
+                                        .foregroundColor(.gray.opacity(0.6))
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .padding(.top, 4)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
+
+                    Button {
                         appState.signOut()
                     } label: {
                         HStack {
@@ -129,6 +163,9 @@ struct SettingsView: View {
             Button("save") { updateDisplayName() }
             Button("cancel", role: .cancel) {}
         }
+        .sheet(isPresented: $showingChangeBio) {
+            EditBioSheet(bio: $newBio, onSave: { updateBio() })
+        }
         .alert("delete account", isPresented: $showingDeleteAccount) {
             Button("delete", role: .destructive) { deleteAccount() }
             Button("cancel", role: .cancel) {}
@@ -153,38 +190,29 @@ struct SettingsView: View {
         isUploadingAvatar = true
         Task {
             do {
-                print("=== loading image data...")
                 guard let data = try await item.loadTransferable(type: Data.self),
                       let image = UIImage(data: data),
                       let jpegData = image.jpegData(compressionQuality: 0.8) else {
-                    print("=== failed to load image data")
                     isUploadingAvatar = false
                     return
                 }
-                print("=== image loaded, size:", jpegData.count)
 
-                print("=== getting upload URL...")
                 let (uploadUrl, key) = try await APIClient.shared.getAvatarUploadURL()
-                print("=== got upload URL, key:", key)
 
                 guard let url = URL(string: uploadUrl) else { return }
                 var request = URLRequest(url: url)
                 request.httpMethod = "PUT"
                 request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
-                let (_, uploadResponse) = try await URLSession.shared.upload(for: request, from: jpegData)
-                print("=== S3 upload status:", (uploadResponse as? HTTPURLResponse)?.statusCode ?? -1)
+                _ = try await URLSession.shared.upload(for: request, from: jpegData)
 
                 let avatarUrl = "https://\(Constants.s3BucketName).s3.\(Constants.awsRegion).amazonaws.com/\(key)?t=\(Int(Date().timeIntervalSince1970))"
-                
+
                 let user = try await APIClient.shared.updateProfile(displayName: appState.currentUser?.displayName ?? "", avatarUrl: avatarUrl)
-                print("=== profile updated!")
-                print("=== new avatar URL:", appState.currentUser?.avatarUrl ?? "nil")
                 await MainActor.run {
                     appState.currentUser = user
                     isUploadingAvatar = false
                 }
             } catch {
-                print("=== avatar upload error:", error)
                 await MainActor.run {
                     errorMessage = "Failed to upload photo"
                     isUploadingAvatar = false
@@ -192,6 +220,7 @@ struct SettingsView: View {
             }
         }
     }
+
     private func updateDisplayName() {
         guard !newDisplayName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         Task {
@@ -200,6 +229,23 @@ struct SettingsView: View {
                 await MainActor.run { appState.currentUser = user }
             } catch {
                 errorMessage = "couldn't update name, try again"
+            }
+        }
+    }
+
+    private func updateBio() {
+        Task {
+            do {
+                let user = try await APIClient.shared.updateProfile(
+                    displayName: appState.currentUser?.displayName ?? "",
+                    bio: newBio
+                )
+                await MainActor.run {
+                    appState.currentUser = user
+                    showingChangeBio = false
+                }
+            } catch {
+                errorMessage = "couldn't update bio, try again"
             }
         }
     }
@@ -213,5 +259,61 @@ struct SettingsView: View {
                 errorMessage = "couldn't delete account, try again"
             }
         }
+    }
+}
+
+struct EditBioSheet: View {
+    @Binding var bio: String
+    var onSave: () -> Void
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("bio")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                        .padding(.top, 16)
+
+                    TextEditor(text: $bio)
+                        .scrollContentBackground(.hidden)
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                        .frame(height: 140)
+                        .padding(.horizontal)
+
+                    Text("\(bio.count)/150")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+
+                    Spacer()
+                }
+            }
+            .navigationTitle("edit bio")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("cancel") { dismiss() }
+                        .foregroundColor(.gray)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("save") { onSave() }
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
+                }
+            }
+            .onChange(of: bio) { _, newValue in
+                if newValue.count > 150 {
+                    bio = String(newValue.prefix(150))
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }

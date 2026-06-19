@@ -82,9 +82,10 @@ class APIClient {
         return response.user
     }
     
-    func updateProfile(displayName: String, avatarUrl: String? = nil) async throws -> User {
+    func updateProfile(displayName: String, avatarUrl: String? = nil, bio: String? = nil) async throws -> User {
         var body: [String: Any] = ["displayName": displayName]
         if let avatarUrl { body["avatarUrl"] = avatarUrl }
+        if let bio { body["bio"] = bio }
         let response: UserResponse = try await request(
             path: "/auth/profile",
             method: "PATCH",
