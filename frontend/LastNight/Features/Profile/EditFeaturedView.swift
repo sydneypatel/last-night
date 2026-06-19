@@ -9,12 +9,6 @@ struct EditFeaturedView: View {
     @State private var isLoading = true
     @State private var showingPhotoPicker = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2)
-    ]
-
     var body: some View {
         NavigationStack {
             ZStack {
@@ -89,8 +83,7 @@ struct EditFeaturedView: View {
     private func setFeatured(position: Int, photoId: String?) async {
         do {
             try await APIClient.shared.setFeaturedPhoto(position: position, photoId: photoId)
-            
-            // Convert Photo to FeaturedPhoto for local state update
+
             var newFeaturedPhoto: FeaturedPhoto? = nil
             if let photoId, let photo = myPhotos.first(where: { $0.id == photoId }) {
                 newFeaturedPhoto = FeaturedPhoto(
@@ -100,7 +93,7 @@ struct EditFeaturedView: View {
                     url: photo.url
                 )
             }
-            
+
             if let idx = slots.firstIndex(where: { $0.position == position }) {
                 slots[idx] = LNFeaturedSlot(position: position, photo: newFeaturedPhoto)
             }
@@ -157,10 +150,16 @@ struct PhotoPickerView: View {
                             LazyVGrid(columns: columns, spacing: 2) {
                                 ForEach(photos) { photo in
                                     if let url = photo.url, let imageURL = URL(string: url) {
-                                        AsyncImage(url: imageURL) { image in
-                                            image.resizable().scaledToFill()
-                                        } placeholder: {
-                                            Color.white.opacity(0.05)
+                                        GeometryReader { geo in
+                                            AsyncImage(url: imageURL) { image in
+                                                image
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: geo.size.width, height: geo.size.width)
+                                                    .clipped()
+                                            } placeholder: {
+                                                Color.white.opacity(0.05)
+                                            }
                                         }
                                         .aspectRatio(1, contentMode: .fit)
                                         .clipped()

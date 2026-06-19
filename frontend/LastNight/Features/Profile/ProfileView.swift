@@ -3,10 +3,14 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var featuredSlots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
+    @State private var myPhotos: [Photo] = []
     @State private var isLoading = true
     @State private var followerCount = 0
     @State private var followingCount = 0
     @State private var showingFollowList: FollowListMode?
+    @State private var showingEditFeatured = false
+    @State private var selectedSlot: LNFeaturedSlot?
+    @State private var showingPhotoPicker = false
 
     var body: some View {
         NavigationStack {
@@ -78,7 +82,9 @@ struct ProfileView: View {
                                 .font(.headline)
                                 .foregroundColor(.white)
                             Spacer()
-                            NavigationLink(destination: EditFeaturedView().environmentObject(appState)) {
+                            Button {
+                                showingEditFeatured = true
+                            } label: {
                                 Text("edit")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
@@ -90,8 +96,13 @@ struct ProfileView: View {
                         if isLoading {
                             ProgressView().tint(.white).padding(.top, 40)
                         } else {
-                            NavigationLink(destination: EditFeaturedView().environmentObject(appState)) {
-                                FeaturedGridView(slots: featuredSlots, isOwner: true)
+                            FeaturedGridView(slots: featuredSlots, isOwner: true) { slot in
+                                if slot.photo == nil {
+                                    selectedSlot = slot
+                                    showingPhotoPicker = true
+                                } else {
+                                    showingEditFeatured = true
+                                }
                             }
                         }
                     }
@@ -109,6 +120,27 @@ struct ProfileView: View {
             }
             .task { await loadFeatured() }
             .onAppear { Task { await loadFeatured() } }
+            .sheet(isPresented: $showingEditFeatured, onDismiss: {
+                Task { await loadFeatured() }
+            }) {
+                EditFeaturedView().environmentObject(appState)
+            }
+            .sheet(isPresented: $showingPhotoPicker, onDismiss: {
+                Task { await loadFeatured() }
+            }) {
+                if let slot = selectedSlot {
+                    PhotoPickerView(
+                        slot: slot,
+                        photos: myPhotos,
+                        onSelect: { photoId in
+                            Task { await setFeatured(position: slot.position, photoId: photoId) }
+                        },
+                        onClear: {
+                            Task { await setFeatured(position: slot.position, photoId: nil) }
+                        }
+                    )
+                }
+            }
             .sheet(item: $showingFollowList) { mode in
                 if let userId = appState.currentUser?.id, let username = appState.currentUser?.username {
                     FollowListView(userId: userId, username: username, mode: mode)
@@ -124,12 +156,14 @@ struct ProfileView: View {
             return
         }
         do {
+            async let photosTask = APIClient.shared.getMyPhotosForFeaturing()
+            myPhotos = (try? await photosTask) ?? []
+
             let fetched = try await APIClient.shared.getFeaturedGrid(username: username)
             featuredSlots = (1...9).map { pos in
                 fetched.first(where: { $0.position == pos }) ?? LNFeaturedSlot(position: pos, photo: nil)
             }
 
-            // Fetch follower/following counts via profile lookup
             let profile = try await APIClient.shared.getUserProfile(username: username)
             followerCount = profile.followerCount ?? 0
             followingCount = profile.followingCount ?? 0
@@ -137,5 +171,26 @@ struct ProfileView: View {
             print("Error loading featured:", error)
         }
         isLoading = false
+    }
+
+    private func setFeatured(position: Int, photoId: String?) async {
+        do {
+            try await APIClient.shared.setFeaturedPhoto(position: position, photoId: photoId)
+            var newFeaturedPhoto: FeaturedPhoto? = nil
+            if let photoId, let photo = myPhotos.first(where: { $0.id == photoId }) {
+                newFeaturedPhoto = FeaturedPhoto(
+                    id: photo.id,
+                    s3Key: photo.s3Key,
+                    locked: photo.locked,
+                    url: photo.url
+                )
+            }
+            if let idx = featuredSlots.firstIndex(where: { $0.position == position }) {
+                featuredSlots[idx] = LNFeaturedSlot(position: position, photo: newFeaturedPhoto)
+            }
+        } catch {
+            print("Error setting featured:", error)
+        }
+        showingPhotoPicker = false
     }
 }
