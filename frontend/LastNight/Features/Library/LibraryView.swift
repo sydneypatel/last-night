@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LibraryView: View {
+    @EnvironmentObject var appState: AppState
     @State private var photos: [Photo] = []
     @State private var isLoading = true
     @State private var selectedPhotoIndex: Int?
@@ -58,14 +59,19 @@ struct LibraryView: View {
             }
             .navigationTitle("library")
             .task { await loadLibrary() }
-//            .onAppear { Task { await loadLibrary() } }
             .sheet(isPresented: Binding(
                 get: { selectedPhotoIndex != nil },
                 set: { if !$0 { selectedPhotoIndex = nil } }
             )) {
                 if let index = selectedPhotoIndex {
-                    LibraryDetailView(photos: photos, startIndex: index)
-                        .environmentObject(AppState())
+                    LibraryDetailView(
+                        photos: photos,
+                        startIndex: index,
+                        onPhotoRemoved: { removedId in
+                            photos.removeAll { $0.id == removedId }
+                        }
+                    )
+                    .environmentObject(appState)
                 }
             }
         }

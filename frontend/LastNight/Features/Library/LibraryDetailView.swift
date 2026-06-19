@@ -4,27 +4,34 @@ import Photos
 struct LibraryDetailView: View {
     let photos: [Photo]
     let startIndex: Int
+    var onPhotoRemoved: ((String) -> Void)?
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
     @State private var currentIndex: Int
+    @State private var localPhotos: [Photo]
     @State private var showSavedToast = false
     @State private var toastMessage = ""
     @State private var isSavingToPhotos = false
     @State private var showingPinSheet = false
+    @State private var showingRemoveConfirm = false
+    @State private var isRemoving = false
 
-    init(photos: [Photo], startIndex: Int) {
+    init(photos: [Photo], startIndex: Int, onPhotoRemoved: ((String) -> Void)? = nil) {
         self.photos = photos
         self.startIndex = startIndex
+        self.onPhotoRemoved = onPhotoRemoved
         _currentIndex = State(initialValue: startIndex)
+        _localPhotos = State(initialValue: photos)
     }
 
-    var currentPhoto: Photo { photos[currentIndex] }
+    var currentPhoto: Photo { localPhotos[currentIndex] }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             TabView(selection: $currentIndex) {
-                ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
+                ForEach(Array(localPhotos.enumerated()), id: \.offset) { index, photo in
                     LibraryPhotoPageView(photo: photo)
                         .tag(index)
                 }
@@ -33,7 +40,6 @@ struct LibraryDetailView: View {
             .ignoresSafeArea()
 
             VStack {
-                // Top bar
                 HStack {
                     Button {
                         dismiss()
@@ -46,18 +52,27 @@ struct LibraryDetailView: View {
                             .clipShape(Circle())
                     }
                     Spacer()
-                    Text("\(currentIndex + 1) / \(photos.count)")
+                    Text("\(currentIndex + 1) / \(localPhotos.count)")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                     Spacer()
-                    Color.clear.frame(width: 44, height: 44)
+                    Button {
+                        showingRemoveConfirm = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    .disabled(isRemoving)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
 
                 Spacer()
 
-                // Bottom actions
                 VStack(spacing: 0) {
                     LinearGradient(
                         colors: [.clear, .black.opacity(0.8)],
@@ -67,7 +82,6 @@ struct LibraryDetailView: View {
                     .frame(height: 60)
 
                     HStack(spacing: 12) {
-                        // Save to camera roll
                         Button {
                             saveToCameraRoll()
                         } label: {
@@ -90,7 +104,6 @@ struct LibraryDetailView: View {
                         }
                         .disabled(isSavingToPhotos)
 
-                        // Pin to featured
                         Button {
                             showingPinSheet = true
                         } label: {
@@ -108,15 +121,19 @@ struct LibraryDetailView: View {
                             .cornerRadius(14)
                         }
                     }
-
-                    // Photo info
+                    
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             if let username = currentPhoto.username {
                                 Text("@\(username)")
-                                    .font(.caption)
+                                    .font(.subheadline)
                                     .fontWeight(.medium)
                                     .foregroundColor(.white)
+                            }
+                            if let groupName = currentPhoto.groupName {
+                                Text(groupName)
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
                             }
                             if let capturedAt = currentPhoto.capturedAt {
                                 Text(capturedAt.formatted(date: .abbreviated, time: .shortened))
@@ -133,7 +150,6 @@ struct LibraryDetailView: View {
                 .background(Color.black)
             }
 
-            // Toast
             if showSavedToast {
                 VStack {
                     Spacer()
@@ -148,13 +164,50 @@ struct LibraryDetailView: View {
                 }
                 .transition(.opacity)
             }
+
+            if isRemoving {
+                Color.black.opacity(0.4).ignoresSafeArea()
+                ProgressView().tint(.white)
+            }
         }
         .preferredColorScheme(.dark)
+        .alert("remove from library?", isPresented: $showingRemoveConfirm) {
+            Button("remove", role: .destructive) { removeFromLibrary() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("this removes the photo from your library. it stays in the group feed.")
+        }
         .sheet(isPresented: $showingPinSheet) {
             PinToFeaturedSheet(photo: currentPhoto, onPinned: {
                 showToast("pinned to your profile!")
             })
-            .environmentObject(AppState())
+            .environmentObject(appState)
+        }
+    }
+
+    private func removeFromLibrary() {
+        let photo = currentPhoto
+        isRemoving = true
+        Task {
+            do {
+                try await APIClient.shared.removeFromLibrary(photoId: photo.id)
+                await MainActor.run {
+                    isRemoving = false
+                    onPhotoRemoved?(photo.id)
+                    if localPhotos.count == 1 {
+                        dismiss()
+                    } else {
+                        let newIndex = currentIndex >= localPhotos.count - 1
+                            ? currentIndex - 1
+                            : currentIndex
+                        localPhotos.removeAll { $0.id == photo.id }
+                        currentIndex = newIndex
+                    }
+                }
+            } catch {
+                print("Remove from library error:", error)
+                await MainActor.run { isRemoving = false }
+            }
         }
     }
 
@@ -223,8 +276,6 @@ struct LibraryPhotoPageView: View {
         }
     }
 }
-
-// MARK: - Pin to featured slot picker
 
 struct PinToFeaturedSheet: View {
     let photo: Photo

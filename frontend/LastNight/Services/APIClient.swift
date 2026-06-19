@@ -238,6 +238,10 @@ class APIClient {
         return response.photos
     }
     
+    func removeFromLibrary(photoId: String) async throws {
+        let _: EmptyResponse = try await request(path: "/library/\(photoId)", method: "DELETE")
+    }
+    
     // MARK: - Featured
 
     func getFeaturedGrid(username: String) async throws -> [LNFeaturedSlot] {

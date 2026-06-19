@@ -11,6 +11,7 @@ struct Photo: Codable, Identifiable {
     let unlockedAt: Date?
     let url: String?
     let username: String?
+    let groupName: String?
     let displayName: String?
     let avatarUrl: String?
 
@@ -22,6 +23,7 @@ struct Photo: Codable, Identifiable {
         case thumbnailKey = "thumbnail_key"
         case capturedAt = "captured_at"
         case unlockedAt = "unlocked_at"
+        case groupName = "group_name"
         case displayName = "display_name"
         case avatarUrl = "avatar_url"
     }

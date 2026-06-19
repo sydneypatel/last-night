@@ -28,21 +28,37 @@ struct GroupFeedView: View {
         GridItem(.flexible(), spacing: 2)
     ]
 
+    private var isUnlocked: Bool {
+        guard let unlockAt = group.unlockAt else { return false }
+        return unlockAt <= Date()
+    }
+
     private var unlockLabel: String {
-        switch group.unlockMode {
-        case .sunrise:
-            return "photos unlock at sunrise"
-        case .sundayNight:
-            return "photos unlock sunday night"
-        case .custom:
-            guard let unlockAt = group.unlockAt else { return "photos unlock at custom time" }
+        guard let unlockAt = group.unlockAt else {
+            switch group.unlockMode {
+            case .sunrise: return "photos unlock at sunrise"
+            case .sundayNight: return "photos unlock sunday night"
+            case .custom: return "photos unlock at custom time"
+            }
+        }
+        if isUnlocked {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             formatter.timeStyle = .short
-            return "unlocks \(formatter.string(from: unlockAt))"
+            return "unlocked \(formatter.string(from: unlockAt))"
+        } else {
+            switch group.unlockMode {
+            case .sunrise: return "photos unlock at sunrise"
+            case .sundayNight: return "photos unlock sunday night"
+            case .custom:
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .short
+                return "unlocks \(formatter.string(from: unlockAt))"
+            }
         }
     }
-
+    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -77,13 +93,17 @@ struct GroupFeedView: View {
                         .padding(.bottom, 8)
 
                         HStack(spacing: 6) {
-                            Image(systemName: "lock.fill").font(.caption2).foregroundColor(.gray)
-                            Text(unlockLabel).font(.caption).foregroundColor(.gray)
+                            Image(systemName: isUnlocked ? "lock.open.fill" : "lock.fill")
+                                .font(.caption2)
+                                .foregroundColor(isUnlocked ? .white.opacity(0.5) : .gray)
+                            Text(unlockLabel)
+                                .font(.caption)
+                                .foregroundColor(isUnlocked ? .white.opacity(0.5) : .gray)
                             Spacer()
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 16)
-
+                        
                         if photos.isEmpty {
                             VStack(spacing: 12) {
                                 Spacer().frame(height: 60)
