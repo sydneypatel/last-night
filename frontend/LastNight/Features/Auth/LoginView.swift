@@ -34,11 +34,23 @@ struct LoginView: View {
                             .font(.caption)
                     }
 
-                    GoogleSignInButton(scheme: .light, style: .wide) {
+                    Button {
                         signInWithGoogle()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image("google_logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            Text("sign in with google")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.white)
+                        .cornerRadius(27)
                     }
-                    .frame(height: 54)
-                    .cornerRadius(27)
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 60)
