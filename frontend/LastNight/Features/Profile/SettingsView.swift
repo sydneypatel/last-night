@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var showingChangeName = false
     @State private var showingChangeBio = false
     @State private var showingDeleteAccount = false
+    @State private var showingPrivacyPolicy = false
     @State private var newDisplayName = ""
     @State private var newBio = ""
     @State private var errorMessage: String?
@@ -17,7 +18,6 @@ struct SettingsView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Avatar picker
                 VStack(spacing: 12) {
                     ZStack(alignment: .bottomTrailing) {
                         if let avatarUrl = appState.currentUser?.avatarUrl,
@@ -111,6 +111,23 @@ struct SettingsView: View {
                     }
 
                     Button {
+                        showingPrivacyPolicy = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                            Text("privacy policy")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
+
+                    Button {
                         appState.signOut()
                     } label: {
                         HStack {
@@ -165,6 +182,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingChangeBio) {
             EditBioSheet(bio: $newBio, onSave: { updateBio() })
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            LegalSheetView()
         }
         .alert("delete account", isPresented: $showingDeleteAccount) {
             Button("delete", role: .destructive) { deleteAccount() }
