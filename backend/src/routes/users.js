@@ -17,7 +17,10 @@ router.get('/search', auth, async (req, res, next) => {
       `SELECT u.id, u.username, u.display_name, u.avatar_url,
               EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = u.id) AS is_following
        FROM users u
-       WHERE LOWER(u.username) LIKE $1 AND u.id != $2
+       WHERE (LOWER(u.username) LIKE $1 OR LOWER(u.display_name) LIKE $1) AND u.id != $2
+       ORDER BY
+         CASE WHEN LOWER(u.username) LIKE $1 THEN 0 ELSE 1 END,
+         u.username
        LIMIT 20`,
       [`${q.toLowerCase()}%`, req.user.id]
     );
