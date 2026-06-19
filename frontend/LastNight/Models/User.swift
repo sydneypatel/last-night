@@ -11,6 +11,11 @@ struct User: Codable, Identifiable {
     let createdAt: Date?
     var role: String?
 
+    // Follow-related (only present on search results / public profile lookups)
+    var isFollowing: Bool?
+    var followerCount: Int?
+    var followingCount: Int?
+
     enum CodingKeys: String, CodingKey {
         case id
         case firebaseUid = "firebase_uid"
@@ -21,5 +26,35 @@ struct User: Codable, Identifiable {
         case bio
         case createdAt = "created_at"
         case role
+        case isFollowing = "is_following"
+        case followerCount = "follower_count"
+        case followingCount = "following_count"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        firebaseUid = try c.decodeIfPresent(String.self, forKey: .firebaseUid)
+        username = try c.decode(String.self, forKey: .username)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        avatarUrl = try c.decodeIfPresent(String.self, forKey: .avatarUrl)
+        timezone = try c.decodeIfPresent(String.self, forKey: .timezone)
+        bio = try c.decodeIfPresent(String.self, forKey: .bio)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
+        role = try c.decodeIfPresent(String.self, forKey: .role)
+        isFollowing = try c.decodeIfPresent(Bool.self, forKey: .isFollowing)
+
+        // Postgres COUNT() can come back as String or Int — handle both
+        if let intVal = try? c.decodeIfPresent(Int.self, forKey: .followerCount) {
+            followerCount = intVal
+        } else if let strVal = try? c.decodeIfPresent(String.self, forKey: .followerCount) {
+            followerCount = Int(strVal)
+        }
+
+        if let intVal = try? c.decodeIfPresent(Int.self, forKey: .followingCount) {
+            followingCount = intVal
+        } else if let strVal = try? c.decodeIfPresent(String.self, forKey: .followingCount) {
+            followingCount = Int(strVal)
+        }
     }
 }

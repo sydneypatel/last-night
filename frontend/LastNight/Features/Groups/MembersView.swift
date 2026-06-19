@@ -20,11 +20,8 @@ struct MembersView: View {
                     ScrollView {
                         LazyVStack(spacing: 2) {
                             ForEach(members) { member in
-                                NavigationLink(destination: PublicProfileView(
-                                    username: member.username,
-                                    displayName: member.displayName,
-                                    avatarUrl: member.avatarUrl
-                                )) {
+                                NavigationLink(destination: UserProfileView(username: member.username))
+                                {
                                     HStack(spacing: 14) {
                                         ZStack {
                                             Circle()

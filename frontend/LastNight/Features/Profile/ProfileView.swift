@@ -4,6 +4,9 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var featuredSlots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var isLoading = true
+    @State private var followerCount = 0
+    @State private var followingCount = 0
+    @State private var showingFollowList: FollowListMode?
 
     var body: some View {
         NavigationStack {
@@ -42,6 +45,30 @@ struct ProfileView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }
+
+                            HStack(spacing: 24) {
+                                Button { showingFollowList = .followers } label: {
+                                    VStack(spacing: 2) {
+                                        Text("\(followerCount)")
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.white)
+                                        Text("followers")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                Button { showingFollowList = .following } label: {
+                                    VStack(spacing: 2) {
+                                        Text("\(followingCount)")
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.white)
+                                        Text("following")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
                         }
                         .padding(.top, 24)
                         .padding(.bottom, 24)
@@ -82,6 +109,11 @@ struct ProfileView: View {
             }
             .task { await loadFeatured() }
             .onAppear { Task { await loadFeatured() } }
+            .sheet(item: $showingFollowList) { mode in
+                if let userId = appState.currentUser?.id, let username = appState.currentUser?.username {
+                    FollowListView(userId: userId, username: username, mode: mode)
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -96,6 +128,11 @@ struct ProfileView: View {
             featuredSlots = (1...9).map { pos in
                 fetched.first(where: { $0.position == pos }) ?? LNFeaturedSlot(position: pos, photo: nil)
             }
+
+            // Fetch follower/following counts via profile lookup
+            let profile = try await APIClient.shared.getUserProfile(username: username)
+            followerCount = profile.followerCount ?? 0
+            followingCount = profile.followingCount ?? 0
         } catch {
             print("Error loading featured:", error)
         }

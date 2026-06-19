@@ -13,6 +13,11 @@ struct MainTabView: View {
                     Label("library", systemImage: "photo.stack.fill")
                 }
 
+            SearchView()
+                .tabItem {
+                    Label("search", systemImage: "magnifyingglass")
+                }
+
             ProfileView()
                 .tabItem {
                     Label("profile", systemImage: "person.fill")

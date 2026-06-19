@@ -116,6 +116,36 @@ class APIClient {
         )
     }
     
+    // MARK: - Social
+
+    func searchUsers(query: String) async throws -> [User] {
+        let response: UsersResponse = try await request(path: "/users/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)")
+        return response.users
+    }
+
+    func getUserProfile(username: String) async throws -> User {
+        let response: UserResponse = try await request(path: "/users/\(username)")
+        return response.user
+    }
+
+    func followUser(id: String) async throws {
+        let _: FollowResponse = try await request(path: "/users/\(id)/follow", method: "POST")
+    }
+
+    func unfollowUser(id: String) async throws {
+        let _: FollowResponse = try await request(path: "/users/\(id)/follow", method: "DELETE")
+    }
+
+    func getFollowers(userId: String) async throws -> [User] {
+        let response: UsersResponse = try await request(path: "/users/\(userId)/followers")
+        return response.users
+    }
+
+    func getFollowing(userId: String) async throws -> [User] {
+        let response: UsersResponse = try await request(path: "/users/\(userId)/following")
+        return response.users
+    }
+    
     // MARK: - Groups
 
     func getGroups() async throws -> [Group] {
@@ -239,6 +269,8 @@ private struct GroupDetailResponse: Decodable { let group: Group; let members: [
 private struct PhotoResponse: Decodable { let photo: Photo }
 private struct PhotosResponse: Decodable { let photos: [Photo] }
 private struct EmptyResponse: Decodable {}
+private struct UsersResponse: Decodable { let users: [User] }
+private struct FollowResponse: Decodable { let following: Bool }
 
 struct UploadURLResponse: Decodable {
     let uploadUrl: String
