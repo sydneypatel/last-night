@@ -107,4 +107,27 @@ router.post('/:id/save', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.delete('/:id', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM photos WHERE id = $1',
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Photo not found' });
+    if (rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Not your photo' });
+
+    // Delete from S3
+    const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: rows[0].s3_key }));
+    if (rows[0].thumbnail_key) {
+      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: rows[0].thumbnail_key }));
+    }
+
+    // Delete from DB
+    await pool.query('DELETE FROM photos WHERE id = $1', [req.params.id]);
+    res.json({ deleted: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

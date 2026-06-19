@@ -55,10 +55,6 @@ class APIClient {
         }
 
         let decoder = JSONDecoder()
-        // Temporary debug — remove later
-        if let str = String(data: data, encoding: .utf8) {
-            print("=== RAW RESPONSE for \(path):", str)
-        }
         decoder.dateDecodingStrategy = .iso8601
         guard let decoded = try? decoder.decode(T.self, from: data) else {
             throw APIError.decodingError
@@ -229,6 +225,10 @@ class APIClient {
 
     func savePhoto(photoId: String) async throws {
         let _: EmptyResponse = try await request(path: "/photos/\(photoId)/save", method: "POST")
+    }
+    
+    func deletePhoto(photoId: String) async throws {
+        let _: EmptyResponse = try await request(path: "/photos/\(photoId)", method: "DELETE")
     }
 
     // MARK: - Library

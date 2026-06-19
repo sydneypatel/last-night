@@ -5,28 +5,39 @@ struct PhotoDetailView: View {
     let photos: [Photo]
     let startIndex: Int
     let groupName: String
+    var onPhotoDeleted: ((String) -> Void)?
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
     @State private var currentIndex: Int
     @State private var isSaving = false
     @State private var isSavingToCamera = false
     @State private var showSavedToast = false
     @State private var savedPhotoIds: Set<String> = []
+    @State private var showingDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var localPhotos: [Photo]
 
-    init(photos: [Photo], startIndex: Int, groupName: String) {
+    init(photos: [Photo], startIndex: Int, groupName: String, onPhotoDeleted: ((String) -> Void)? = nil) {
         self.photos = photos
         self.startIndex = startIndex
         self.groupName = groupName
+        self.onPhotoDeleted = onPhotoDeleted
         _currentIndex = State(initialValue: startIndex)
+        _localPhotos = State(initialValue: photos)
     }
 
-    var currentPhoto: Photo { photos[currentIndex] }
+    var currentPhoto: Photo { localPhotos[currentIndex] }
+
+    var isOwnPhoto: Bool {
+        currentPhoto.userId == appState.currentUser?.id
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             TabView(selection: $currentIndex) {
-                ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
+                ForEach(Array(localPhotos.enumerated()), id: \.offset) { index, photo in
                     PhotoPageView(
                         photo: photo,
                         groupName: groupName,
@@ -58,13 +69,27 @@ struct PhotoDetailView: View {
 
                     Spacer()
 
-                    Text("\(currentIndex + 1) / \(photos.count)")
+                    Text("\(currentIndex + 1) / \(localPhotos.count)")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
 
                     Spacer()
 
-                    Color.clear.frame(width: 44, height: 44)
+                    if isOwnPhoto {
+                        Button {
+                            showingDeleteConfirm = true
+                        } label: {
+                            Image(systemName: isDeleting ? "trash" : "trash")
+                                .font(.title3)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        .disabled(isDeleting)
+                    } else {
+                        Color.clear.frame(width: 44, height: 44)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -86,10 +111,50 @@ struct PhotoDetailView: View {
                 }
                 .transition(.opacity)
             }
+
+            if isDeleting {
+                Color.black.opacity(0.4).ignoresSafeArea()
+                ProgressView().tint(.white)
+            }
         }
         .preferredColorScheme(.dark)
+        .alert("delete photo?", isPresented: $showingDeleteConfirm) {
+            Button("delete", role: .destructive) { deletePhoto() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("this will permanently remove the photo from the group.")
+        }
         .task {
             await checkSavedPhotos()
+        }
+    }
+
+    private func deletePhoto() {
+        let photo = currentPhoto
+        isDeleting = true
+        Task {
+            do {
+                try await APIClient.shared.deletePhoto(photoId: photo.id)
+                await MainActor.run {
+                    isDeleting = false
+                    onPhotoDeleted?(photo.id)
+
+                    if localPhotos.count == 1 {
+                        // Last photo — dismiss
+                        dismiss()
+                    } else {
+                        // Remove from local array, adjust index
+                        let newIndex = currentIndex >= localPhotos.count - 1
+                            ? currentIndex - 1
+                            : currentIndex
+                        localPhotos.removeAll { $0.id == photo.id }
+                        currentIndex = newIndex
+                    }
+                }
+            } catch {
+                print("Delete photo error:", error)
+                await MainActor.run { isDeleting = false }
+            }
         }
     }
 
@@ -236,7 +301,6 @@ struct PhotoPageView: View {
                             Spacer()
 
                             HStack(spacing: 10) {
-                                // Save to in-app library (heart pill)
                                 Button {
                                     onSaveToLibrary()
                                 } label: {
@@ -259,7 +323,6 @@ struct PhotoPageView: View {
                                 }
                                 .disabled(isSaving || isSaved)
 
-                                // Save to camera roll (download pill)
                                 Button {
                                     onSaveToCamera()
                                 } label: {

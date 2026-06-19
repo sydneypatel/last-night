@@ -3,6 +3,7 @@ import PhotosUI
 
 struct GroupFeedView: View {
     let group: Group
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
     @State private var photos: [Photo] = []
     @State private var isLoading = true
@@ -43,7 +44,6 @@ struct GroupFeedView: View {
     }
 
     var body: some View {
-        let _ = print("DEBUG group.role:", group.role as Any)
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -216,7 +216,15 @@ struct GroupFeedView: View {
             set: { if !$0 { selectedPhotoIndex = nil } }
         )) {
             if let index = selectedPhotoIndex {
-                PhotoDetailView(photos: photos, startIndex: index, groupName: group.name)
+                PhotoDetailView(
+                    photos: photos,
+                    startIndex: index,
+                    groupName: group.name,
+                    onPhotoDeleted: { deletedId in
+                        photos.removeAll { $0.id == deletedId }
+                    }
+                )
+                .environmentObject(appState)
             }
         }
     }
