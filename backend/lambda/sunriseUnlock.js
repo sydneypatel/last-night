@@ -9,13 +9,11 @@ const pool = new Pool({
 
 async function getApnsToken() {
   const keyContent = process.env.APNS_KEY_CONTENT.replace(/\\n/g, '\n');
-
   const pemBody = keyContent
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
     .replace(/\s/g, '');
   const keyBuffer = Buffer.from(pemBody, 'base64');
-
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
     keyBuffer,
@@ -23,30 +21,25 @@ async function getApnsToken() {
     false,
     ['sign']
   );
-
   const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: process.env.APNS_KEY_ID })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
   const payload = Buffer.from(JSON.stringify({ iss: process.env.APNS_TEAM_ID, iat: now })).toString('base64url');
   const signingInput = `${header}.${payload}`;
-
   const signature = await crypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
     cryptoKey,
     Buffer.from(signingInput)
   );
-
   const sigBase64 = Buffer.from(signature).toString('base64url');
   return `${signingInput}.${sigBase64}`;
 }
 
-// environment: 'sandbox' or 'production'
 async function sendPush(deviceToken, environment, title, body, data = {}) {
   const token = await getApnsToken();
   const host = environment === 'production'
     ? 'api.push.apple.com'
     : 'api.sandbox.push.apple.com';
   const url = `https://${host}/3/device/${deviceToken}`;
-
   const payload = {
     aps: {
       alert: { title, body },
@@ -55,7 +48,6 @@ async function sendPush(deviceToken, environment, title, body, data = {}) {
     },
     ...data,
   };
-
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -66,28 +58,41 @@ async function sendPush(deviceToken, environment, title, body, data = {}) {
     },
     body: JSON.stringify(payload),
   });
-
   if (!res.ok) {
     const err = await res.json();
     console.error(`APNs error (${environment}):`, err);
   }
 }
 
-// Computes tomorrow 6:30 AM in the group's local timezone, returned as a UTC Date
 function getNextSunriseInTimezone(timezone) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toLocaleDateString('en-US', { timeZone: timezone });
-  return new Date(`${tomorrowStr} 06:30:00 ${timezone}`);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+  // Get tomorrow's date components in the target timezone
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(tomorrow);
+
+  const year = parts.find(p => p.type === 'year').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const day = parts.find(p => p.type === 'day').value;
+
+  // Find the UTC offset for 6:30 AM in that timezone
+  const target = new Date(`${year}-${month}-${day}T06:30:00`);
+  const localTime = new Date(tomorrow.toLocaleString('en-US', { timeZone: timezone }));
+  const utcOffset = localTime - tomorrow;
+  return new Date(target.getTime() - utcOffset);
 }
 
 exports.handler = async (event) => {
   console.log('Sunrise unlock Lambda triggered:', new Date().toISOString());
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const { rows: groupsToUnlock } = await client.query(`
       SELECT g.id, g.name, g.unlock_mode, g.unlock_at, g.timezone
       FROM groups g
@@ -99,16 +104,12 @@ exports.handler = async (event) => {
           WHERE p.group_id = g.id AND p.locked = TRUE
         )
     `);
-
     console.log(`Found ${groupsToUnlock.length} groups to unlock`);
-
     if (groupsToUnlock.length === 0) {
       await client.query('COMMIT');
       return { statusCode: 200, body: 'No groups to unlock' };
     }
-
     const unlockedGroups = [];
-
     for (const group of groupsToUnlock) {
       const { rowCount } = await client.query(`
         UPDATE photos
@@ -116,9 +117,7 @@ exports.handler = async (event) => {
         WHERE group_id = $1 AND locked = TRUE
         RETURNING id
       `, [group.id]);
-
       console.log(`Unlocked ${rowCount} photos in group: ${group.name}`);
-
       const { rows: members } = await client.query(`
         SELECT u.id, u.display_name, dt.token, dt.environment
         FROM group_members gm
@@ -126,7 +125,6 @@ exports.handler = async (event) => {
         LEFT JOIN device_tokens dt ON dt.user_id = u.id
         WHERE gm.group_id = $1
       `, [group.id]);
-
       for (const member of members) {
         if (member.token) {
           try {
@@ -142,30 +140,27 @@ exports.handler = async (event) => {
           }
         }
       }
-
       unlockedGroups.push({
         groupId: group.id,
         groupName: group.name,
         photosUnlocked: rowCount,
         memberCount: members.length,
       });
-
       if (group.unlock_mode === 'sunrise') {
         const nextUnlock = getNextSunriseInTimezone(group.timezone);
-        await client.query(`
-          UPDATE groups SET unlock_at = $1 WHERE id = $2
-        `, [nextUnlock.toISOString(), group.id]);
+        console.log(`Rescheduling ${group.name} to unlock at: ${nextUnlock.toISOString()}`);
+        await client.query(
+          'UPDATE groups SET unlock_at = $1 WHERE id = $2',
+          [nextUnlock.toISOString(), group.id]
+        );
       }
     }
-
     await client.query('COMMIT');
-
     console.log('Unlock complete:', JSON.stringify(unlockedGroups));
     return {
       statusCode: 200,
       body: JSON.stringify({ unlockedGroups }),
     };
-
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Lambda error:', err);
