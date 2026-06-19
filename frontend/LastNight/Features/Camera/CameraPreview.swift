@@ -1,10 +1,3 @@
-//
-//  CameraPreview.swift
-//  LastNight
-//
-//  Created by Sydney Patel on 3/31/26.
-//
-
 import SwiftUI
 import AVFoundation
 
@@ -15,7 +8,6 @@ struct CameraPreview: UIViewRepresentable {
         let view = PreviewView()
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspectFill
-        // Lock preview to portrait
         if let connection = view.videoPreviewLayer.connection,
            connection.isVideoRotationAngleSupported(90) {
             connection.videoRotationAngle = 90

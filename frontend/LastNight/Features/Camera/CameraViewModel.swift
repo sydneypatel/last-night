@@ -8,6 +8,7 @@ class CameraViewModel: NSObject, ObservableObject {
     @Published var isCapturing = false
     @Published var error: String?
     @Published var isFrontCamera = false
+    @Published var zoomFactor: CGFloat = 1.0
 
     let session = AVCaptureSession()
     private var photoOutput = AVCapturePhotoOutput()
@@ -66,6 +67,8 @@ class CameraViewModel: NSObject, ObservableObject {
         currentInput = newInput
         session.commitConfiguration()
         isFrontCamera.toggle()
+        zoomFactor = 1.0
+        setZoom(1.0)
     }
 
     func capturePhoto() {
@@ -79,6 +82,40 @@ class CameraViewModel: NSObject, ObservableObject {
             self?.session.stopRunning()
         }
     }
+
+    func setZoom(_ factor: CGFloat) {
+        guard let device = currentInput?.device else { return }
+        let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 5.0)
+        let clamped = max(1.0, min(factor, maxZoom))
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        } catch {
+            print("Zoom error:", error)
+        }
+    }
+
+    // Mirror image horizontally (for front camera)
+    private func mirrorHorizontally(_ image: UIImage) -> UIImage {
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        let context = UIGraphicsGetCurrentContext()!
+        context.translateBy(x: image.size.width, y: 0)
+        context.scaleBy(x: -1, y: 1)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let mirrored = UIGraphicsGetImageFromCurrentImageContext() ?? image
+        UIGraphicsEndImageContext()
+        return mirrored
+    }
+
+    private func normalizeOrientation(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalized = UIGraphicsGetImageFromCurrentImageContext() ?? image
+        UIGraphicsEndImageContext()
+        return normalized
+    }
 }
 
 extension CameraViewModel: AVCapturePhotoCaptureDelegate {
@@ -90,7 +127,11 @@ extension CameraViewModel: AVCapturePhotoCaptureDelegate {
         guard let data = photo.fileDataRepresentation(),
               let image = UIImage(data: data) else { return }
         Task { @MainActor in
-            self.capturedImage = image
+            var processed = self.normalizeOrientation(image)
+            if self.isFrontCamera {
+                processed = self.mirrorHorizontally(processed)
+            }
+            self.capturedImage = processed
             self.isCapturing = false
         }
     }

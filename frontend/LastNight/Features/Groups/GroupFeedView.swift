@@ -202,10 +202,12 @@ struct GroupFeedView: View {
         }
         .task { await loadPhotos() }
         .fullScreenCover(isPresented: $showingCamera) {
-            CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
-                photos.insert(newPhoto, at: 0)
-            })
-        }
+                    CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
+                        if let newPhoto {
+                            photos.insert(newPhoto, at: 0)
+                        }
+                    })
+                }
         .sheet(isPresented: $showingMembers) {
             MembersView(groupId: group.id)
         }

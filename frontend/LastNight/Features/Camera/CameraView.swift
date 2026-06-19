@@ -3,108 +3,123 @@ import AVFoundation
 import MediaPlayer
 import Combine
 
+class OrientationObserver: ObservableObject {
+    @Published var angle: Angle = .degrees(0)
+    private var observer: NSObjectProtocol?
+
+    init() {
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        observer = NotificationCenter.default.addObserver(
+            forName: UIDevice.orientationDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            switch UIDevice.current.orientation {
+            case .landscapeLeft:  self?.angle = .degrees(90)
+            case .landscapeRight: self?.angle = .degrees(-90)
+            case .portraitUpsideDown: self?.angle = .degrees(180)
+            default: self?.angle = .degrees(0)
+            }
+        }
+    }
+
+    deinit {
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
+        if let observer { NotificationCenter.default.removeObserver(observer) }
+    }
+}
+
 struct CameraView: View {
     let groupId: String
-    var onPhotoTaken: (Photo) -> Void
+    var onPhotoTaken: (Photo?) -> Void
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel = CameraViewModel()
-    @State private var isUploading = false
-    @State private var uploadError: String?
+    @StateObject private var orientationObserver = OrientationObserver()
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let preview = viewModel.capturedImage {
-                PhotoPreviewView(
-                    image: preview,
-                    isUploading: isUploading,
-                    uploadError: uploadError,
-                    onRetake: {
-                        viewModel.capturedImage = nil
-                        uploadError = nil
-                        Task.detached { [weak viewModel] in
-                            viewModel?.session.startRunning()
-                        }
-                    },
-                    onUse: {
-                        uploadPhoto(image: preview)
-                    }
-                )
-            } else {
-                CameraPreview(session: viewModel.session)
-                    .ignoresSafeArea()
+            CameraPreview(session: viewModel.session)
                 .ignoresSafeArea()
 
-                VStack {
-                    HStack {
-                        Button {
-                            viewModel.stopSession()
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .padding(12)
-                                .background(Color.black.opacity(0.4))
-                                .clipShape(Circle())
-                        }
-                        Spacer()
-                        Text("LAST NIGHT")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.6))
-                        Spacer()
-                        Button {
-                            viewModel.flipCamera()
-                        } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .padding(12)
-                                .background(Color.black.opacity(0.4))
-                                .clipShape(Circle())
-                        }
+            VStack {
+                HStack {
+                    Button {
+                        viewModel.stopSession()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(Color.black.opacity(0.4))
+                            .clipShape(Circle())
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
+                    .rotationEffect(orientationObserver.angle)
+                    .animation(.easeInOut(duration: 0.3), value: orientationObserver.angle)
+
+                    Spacer()
+
+                    Text("LAST NIGHT")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.6))
 
                     Spacer()
 
                     Button {
-                        viewModel.capturePhoto()
+                        viewModel.flipCamera()
                     } label: {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.white, lineWidth: 3)
-                                .frame(width: 76, height: 76)
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 62, height: 62)
-                        }
+                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(Color.black.opacity(0.4))
+                            .clipShape(Circle())
                     }
-                    .disabled(viewModel.isCapturing)
-                    .padding(.bottom, 48)
+                    .rotationEffect(orientationObserver.angle)
+                    .animation(.easeInOut(duration: 0.3), value: orientationObserver.angle)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
-                if let error = viewModel.error {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .padding()
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
+                Spacer()
+
+                Button {
+                    viewModel.capturePhoto()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white, lineWidth: 3)
+                            .frame(width: 76, height: 76)
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 62, height: 62)
+                    }
                 }
+                .disabled(viewModel.isCapturing)
+                .padding(.bottom, 48)
+            }
+
+            if let error = viewModel.error {
+                Text(error)
+                    .foregroundColor(.red)
+                    .padding()
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(10)
             }
         }
-        .onAppear {
-            setupVolumeButtons()
+        .onChange(of: viewModel.capturedImage) { _, image in
+            guard let image else { return }
+            uploadPhoto(image: image)
         }
+        .onAppear { setupVolumeButtons() }
         .onDisappear {
             viewModel.stopSession()
             teardownVolumeButtons()
         }
     }
 
-    // MARK: - Volume button shutter
     private func setupVolumeButtons() {
         let audioSession = AVAudioSession.sharedInstance()
         try? audioSession.setActive(true)
@@ -113,7 +128,7 @@ struct CameraView: View {
             object: nil,
             queue: .main
         ) { _ in
-            guard viewModel.capturedImage == nil, !viewModel.isCapturing else { return }
+            guard !viewModel.isCapturing else { return }
             viewModel.capturePhoto()
         }
     }
@@ -126,37 +141,26 @@ struct CameraView: View {
         )
     }
 
-    // MARK: - Upload
     private func uploadPhoto(image: UIImage) {
-        isUploading = true
-        uploadError = nil
+        // Dismiss instantly — upload happens in background
+        viewModel.stopSession()
+        dismiss()
 
         Task {
             do {
-                guard let imageData = image.jpegData(compressionQuality: 0.85) else {
-                    await MainActor.run { uploadError = "Failed to process photo" }
-                    isUploading = false
-                    return
-                }
+                guard let imageData = image.jpegData(compressionQuality: 0.85) else { return }
                 let urlResponse = try await APIClient.shared.getUploadURL(groupId: groupId)
                 try await uploadToS3(data: imageData, url: urlResponse.uploadUrl)
-
                 let photo = try await APIClient.shared.confirmUpload(
                     groupId: groupId,
                     s3Key: urlResponse.s3Key,
                     thumbnailKey: urlResponse.s3Key
                 )
-
                 await MainActor.run {
                     onPhotoTaken(photo)
-                    viewModel.stopSession()
-                    dismiss()
                 }
             } catch {
-                await MainActor.run {
-                    uploadError = "Upload failed — try again"
-                    isUploading = false
-                }
+                print("Background upload failed:", error)
             }
         }
     }
@@ -169,75 +173,6 @@ struct CameraView: View {
         let (_, response) = try await URLSession.shared.upload(for: request, from: data)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw APIError.serverError("S3 upload failed")
-        }
-    }
-}
-
-struct PhotoPreviewView: View {
-    let image: UIImage
-    let isUploading: Bool
-    let uploadError: String?
-    var onRetake: () -> Void
-    var onUse: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            GeometryReader { geo in
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .clipped()
-            }
-            .ignoresSafeArea()
-
-            VStack {
-                Spacer()
-
-                if let error = uploadError {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                        .padding(.bottom, 8)
-                }
-
-                HStack(spacing: 16) {
-                    Button {
-                        onRetake()
-                    } label: {
-                        Text("retake")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                            .frame(width: 120, height: 44)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(20)
-                    }
-                    .disabled(isUploading)
-
-                    Button {
-                        onUse()
-                    } label: {
-                        ZStack {
-                            if isUploading {
-                                ProgressView().tint(.black)
-                            } else {
-                                Text("use photo")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.black)
-                            }
-                        }
-                        .frame(width: 120, height: 44)
-                        .background(Color.white)
-                        .cornerRadius(20)
-                    }
-                    .disabled(isUploading)
-                }
-                .padding(.bottom, 48)
-            }
         }
     }
 }
