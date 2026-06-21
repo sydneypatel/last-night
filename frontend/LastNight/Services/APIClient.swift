@@ -195,6 +195,14 @@ class APIClient {
         return response.group
     }
     
+    func renameGroup(id: String, name: String) async throws {
+        let _: EmptyResponse = try await request(
+            path: "/groups/\(id)/name",
+            method: "PATCH",
+            body: ["name": name]
+        )
+    }
+    
     func leaveGroup(id: String) async throws {
         let _: EmptyResponse = try await request(path: "/groups/\(id)/leave", method: "DELETE")
     }

@@ -57,7 +57,7 @@ struct GroupsView: View {
                     .animation(.easeInOut, value: toastMessage)
                 }
             }
-            .navigationTitle("last night")
+            .navigationTitle("last night.")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {

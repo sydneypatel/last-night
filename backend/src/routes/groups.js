@@ -230,4 +230,23 @@ router.patch('/:id/cover', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.patch('/:id/name', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  const { name } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (rows.length === 0) return res.status(403).json({ error: 'Not a member' });
+    if (rows[0].role !== 'owner') return res.status(403).json({ error: 'Only owners can rename the group' });
+    const { rows: updated } = await pool.query(
+      'UPDATE groups SET name = $1 WHERE id = $2 RETURNING *',
+      [name.trim(), req.params.id]
+    );
+    res.json({ group: updated[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

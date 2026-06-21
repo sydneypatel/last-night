@@ -21,6 +21,8 @@ struct GroupFeedView: View {
     @State private var showingCoverPhotoPicker = false
     @State private var selectedCoverItem: PhotosPickerItem?
     @State private var isUploadingCover = false
+    @State private var showingRenameGroup = false
+    @State private var newGroupName = ""
 
     private let columns = [
         GridItem(.flexible(), spacing: 2),
@@ -170,6 +172,12 @@ struct GroupFeedView: View {
                         Button { showingCoverPhotoSourcePicker = true } label: {
                             Label("change cover photo", systemImage: "photo")
                         }
+                        Button {
+                            newGroupName = group.name
+                            showingRenameGroup = true
+                        } label: {
+                            Label("rename group", systemImage: "pencil")
+                        }
                         Button(role: .destructive) {
                             showingDeleteConfirm = true
                         } label: {
@@ -198,6 +206,11 @@ struct GroupFeedView: View {
             Button("cancel", role: .cancel) {}
         } message: {
             Text("this will permanently delete the group and all photos for everyone.")
+        }
+        .alert("rename group", isPresented: $showingRenameGroup) {
+            TextField("group name", text: $newGroupName)
+            Button("save") { renameGroup() }
+            Button("cancel", role: .cancel) {}
         }
         .confirmationDialog("change cover photo", isPresented: $showingCoverPhotoSourcePicker) {
             Button("take photo") { showingCoverCamera = true }
@@ -276,6 +289,17 @@ struct GroupFeedView: View {
                 dismiss()
             } catch {
                 print("Error deleting group:", error)
+            }
+        }
+    }
+    
+    private func renameGroup() {
+        guard !newGroupName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Task {
+            do {
+                try await APIClient.shared.renameGroup(id: group.id, name: newGroupName)
+            } catch {
+                print("Error renaming group:", error)
             }
         }
     }
