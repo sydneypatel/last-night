@@ -32,6 +32,7 @@ struct FollowListView: View {
                             ForEach(users) { user in
                                 NavigationLink(destination: UserProfileView(username: user.username)) {
                                     FollowListRow(user: user)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 Divider().background(Color.white.opacity(0.05))

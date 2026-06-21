@@ -53,7 +53,7 @@ struct SearchView: View {
             .navigationDestination(for: String.self) { username in
                 UserProfileView(username: username)
             }
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "search by username")
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "search by username or display name")
             .onChange(of: query) { _, newValue in
                 searchTask?.cancel()
                 guard newValue.count >= 2 else {

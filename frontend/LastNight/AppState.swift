@@ -8,6 +8,7 @@ class AppState: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isLoading = true
     @Published var pendingGroupId: String? = nil
+    @Published var pendingFollowUserId: String? = nil
 
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 

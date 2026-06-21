@@ -21,7 +21,7 @@ struct SplashView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            Text("last night")
+            Text("last night.")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
