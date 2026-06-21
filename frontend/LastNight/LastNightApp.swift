@@ -1,18 +1,17 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseMessaging
 import GoogleSignIn
 import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        print("🚀🚀🚀 APP DELEGATE LAUNCHED 🚀🚀🚀")
         FirebaseApp.configure()
         UNUserNotificationCenter.current().delegate = self
-        registerForPushNotifications(application)
-        DispatchQueue.main.async {
-            application.registerForRemoteNotifications()
-        }
+        Messaging.messaging().delegate = self
+        requestPushPermission(application)
         return true
     }
 
@@ -22,42 +21,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return GIDSignIn.sharedInstance.handle(url)
     }
 
-    private func registerForPushNotifications(_ application: UIApplication) {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            print("Notification settings:", settings.authorizationStatus.rawValue)
-            switch settings.authorizationStatus {
-            case .notDetermined:
-                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                    print("Push permission granted:", granted, error as Any)
-                    guard granted else { return }
-                    DispatchQueue.main.async {
-                        print("Calling registerForRemoteNotifications...")
-                        application.registerForRemoteNotifications()
-                    }
-                }
-            case .authorized, .provisional:
-                DispatchQueue.main.async {
-                    print("Calling registerForRemoteNotifications...")
-                    application.registerForRemoteNotifications()
-                }
-            default:
-                print("Push notifications denied or restricted")
+    private func requestPushPermission(_ application: UIApplication) {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            print("Push permission granted:", granted, error as Any)
+            guard granted else { return }
+            DispatchQueue.main.async {
+                application.registerForRemoteNotifications()
             }
         }
     }
 
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        print("✅ Device token:", token)
-        #if DEBUG
-        let environment = "sandbox"
-        #else
-        let environment = "production"
-        #endif
-        Task {
-            try? await APIClient.shared.registerDeviceToken(token, environment: environment)
-        }
+        print("✅ APNs device token received")
+        Messaging.messaging().apnsToken = deviceToken
     }
 
     func application(_ application: UIApplication,
@@ -71,6 +48,16 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound, .badge])
+    }
+}
+
+extension AppDelegate: MessagingDelegate {
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken else { return }
+        print("✅ FCM token:", fcmToken)
+        Task {
+            try? await APIClient.shared.registerDeviceToken(fcmToken, environment: "fcm")
+        }
     }
 }
 
