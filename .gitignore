@@ -39,3 +39,8 @@ AuthKey_338KC436TR.p8
 backend/lambda/node_modules/
 frontend/LastNight.xcodeproj/xcshareddata/
 frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
+backend/lambda/function.zip
+backend/lambda/package-lock.json
+backend/lambda/node_modules/
+frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
+frontend/LastNight.xcodeproj/xcuserdata/
