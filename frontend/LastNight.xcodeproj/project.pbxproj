@@ -10,9 +10,10 @@
 		EB228C9F2FE4AE06006875D7 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C9E2FE4AE06006875D7 /* Kingfisher */; };
 		EB228CA22FE4AE0C006875D7 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA12FE4AE0C006875D7 /* GoogleSignIn */; };
 		EB228CA42FE4AE0C006875D7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA32FE4AE0C006875D7 /* GoogleSignInSwift */; };
-		EB228CA72FE4AE40006875D7 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA62FE4AE40006875D7 /* FirebaseAuth */; };
-		EB228CA92FE4AE40006875D7 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA82FE4AE40006875D7 /* FirebaseCore */; };
-		EB228CAB2FE4AE40006875D7 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CAA2FE4AE40006875D7 /* FirebaseFirestore */; };
+		EBF0666F2FE8724F00134318 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = EBF0666E2FE8724F00134318 /* FirebaseAuth */; };
+		EBF066712FE8724F00134318 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066702FE8724F00134318 /* FirebaseCore */; };
+		EBF066732FE8724F00134318 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066722FE8724F00134318 /* FirebaseFirestore */; };
+		EBF066752FE8724F00134318 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066742FE8724F00134318 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,11 +47,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				EB228CA42FE4AE0C006875D7 /* GoogleSignInSwift in Frameworks */,
-				EB228CA92FE4AE40006875D7 /* FirebaseCore in Frameworks */,
+				EBF066712FE8724F00134318 /* FirebaseCore in Frameworks */,
+				EBF066752FE8724F00134318 /* FirebaseMessaging in Frameworks */,
 				EB228C9F2FE4AE06006875D7 /* Kingfisher in Frameworks */,
 				EB228CA22FE4AE0C006875D7 /* GoogleSignIn in Frameworks */,
-				EB228CA72FE4AE40006875D7 /* FirebaseAuth in Frameworks */,
-				EB228CAB2FE4AE40006875D7 /* FirebaseFirestore in Frameworks */,
+				EBF0666F2FE8724F00134318 /* FirebaseAuth in Frameworks */,
+				EBF066732FE8724F00134318 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,9 +98,10 @@
 				EB228C9E2FE4AE06006875D7 /* Kingfisher */,
 				EB228CA12FE4AE0C006875D7 /* GoogleSignIn */,
 				EB228CA32FE4AE0C006875D7 /* GoogleSignInSwift */,
-				EB228CA62FE4AE40006875D7 /* FirebaseAuth */,
-				EB228CA82FE4AE40006875D7 /* FirebaseCore */,
-				EB228CAA2FE4AE40006875D7 /* FirebaseFirestore */,
+				EBF0666E2FE8724F00134318 /* FirebaseAuth */,
+				EBF066702FE8724F00134318 /* FirebaseCore */,
+				EBF066722FE8724F00134318 /* FirebaseFirestore */,
+				EBF066742FE8724F00134318 /* FirebaseMessaging */,
 			);
 			productName = LastNight;
 			productReference = EBFBCEE72F7B055E00855A91 /* LastNight.app */;
@@ -131,7 +134,7 @@
 			packageReferences = (
 				EB228C9D2FE4AE06006875D7 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				EB228CA02FE4AE0C006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
-				EB228CA52FE4AE40006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EBFBCEE82F7B055E00855A91 /* Products */;
@@ -299,6 +302,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LastNight/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "last night.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
@@ -338,6 +342,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LastNight/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "last night.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
@@ -405,7 +410,7 @@
 				minimumVersion = 9.2.0;
 			};
 		};
-		EB228CA52FE4AE40006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+		EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
@@ -431,20 +436,25 @@
 			package = EB228CA02FE4AE0C006875D7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
 		};
-		EB228CA62FE4AE40006875D7 /* FirebaseAuth */ = {
+		EBF0666E2FE8724F00134318 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = EB228CA52FE4AE40006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
 		};
-		EB228CA82FE4AE40006875D7 /* FirebaseCore */ = {
+		EBF066702FE8724F00134318 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = EB228CA52FE4AE40006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
 		};
-		EB228CAA2FE4AE40006875D7 /* FirebaseFirestore */ = {
+		EBF066722FE8724F00134318 /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = EB228CA52FE4AE40006875D7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		EBF066742FE8724F00134318 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBF0666D2FE8724F00134318 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
