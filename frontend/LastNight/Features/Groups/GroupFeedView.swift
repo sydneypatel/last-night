@@ -13,6 +13,7 @@ struct GroupFeedView: View {
     @State private var selectedPhotoIndex: Int?
     @State private var showingLeaveConfirm = false
     @State private var showingDeleteConfirm = false
+    @State private var currentGroupName: String = ""
 
     // Cover photo state
     @State private var currentCoverUrl: String?
@@ -160,7 +161,7 @@ struct GroupFeedView: View {
                 }
             }
         }
-        .navigationTitle(group.name)
+        .navigationTitle(currentGroupName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -173,7 +174,7 @@ struct GroupFeedView: View {
                             Label("change cover photo", systemImage: "photo")
                         }
                         Button {
-                            newGroupName = group.name
+                            newGroupName = currentGroupName
                             showingRenameGroup = true
                         } label: {
                             Label("rename group", systemImage: "pencil")
@@ -234,6 +235,9 @@ struct GroupFeedView: View {
             }
         }
         .task { await loadPhotos() }
+        .onAppear {
+            currentGroupName = group.name
+        }
         .fullScreenCover(isPresented: $showingCamera) {
                     CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
                         if let newPhoto {
@@ -298,6 +302,9 @@ struct GroupFeedView: View {
         Task {
             do {
                 try await APIClient.shared.renameGroup(id: group.id, name: newGroupName)
+                await MainActor.run {
+                    currentGroupName = newGroupName
+                }
             } catch {
                 print("Error renaming group:", error)
             }
