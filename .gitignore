@@ -36,3 +36,6 @@ Thumbs.db
 
 AuthKey_338KC436TR.p8
 *.p8
+backend/lambda/node_modules/
+frontend/LastNight.xcodeproj/xcshareddata/
+frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
