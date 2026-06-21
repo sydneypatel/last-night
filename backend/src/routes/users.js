@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const auth = require('../middleware/auth');
+const admin = require('../config/firebaseAdmin');
+
+async function sendFCM(tokens, title, body, data = {}) {
+  if (!tokens || tokens.length === 0) return;
+  const stringData = Object.fromEntries(
+    Object.entries(data).map(([k, v]) => [k, String(v)])
+  );
+  try {
+    await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: { title, body },
+      data: stringData,
+    });
+  } catch (err) {
+    console.error('FCM error (non-fatal):', err);
+  }
+}
 
 router.get('/me', auth, async (req, res) => {
   if (!req.user) return res.status(404).json({ error: 'User not found' });
@@ -53,10 +70,27 @@ router.post('/:id/follow', auth, async (req, res, next) => {
     if (targetCheck.length === 0) return res.status(404).json({ error: 'User not found' });
 
     await pool.query(
-      `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
+      `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [req.user.id, targetId]
     );
+
+    // Notify the person being followed
+    try {
+      const { rows: tokenRows } = await pool.query(
+        'SELECT token FROM device_tokens WHERE user_id = $1',
+        [targetId]
+      );
+      const tokens = tokenRows.map(r => r.token);
+      await sendFCM(
+        tokens,
+        'new follower',
+        `${req.user.display_name} started following you`,
+        { type: 'new_follower', userId: req.user.id }
+      );
+    } catch (pushErr) {
+      console.error('Follow push failed (non-fatal):', pushErr);
+    }
+
     res.status(201).json({ following: true });
   } catch (err) { next(err); }
 });

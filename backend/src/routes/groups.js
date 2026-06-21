@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const auth = require('../middleware/auth');
-const { sendPush } = require('../config/apns');
+const admin = require('../config/firebaseAdmin');
 
 function getNextSunrise(timezone) {
   const tomorrow = new Date();
@@ -18,6 +18,23 @@ function getNextSundayNight(timezone) {
   nextSunday.setDate(now.getDate() + daysUntilSunday);
   const sundayStr = nextSunday.toLocaleDateString('en-US', { timeZone: timezone });
   return new Date(sundayStr + ' 23:59:00');
+}
+
+async function sendFCM(tokens, title, body, data = {}) {
+  if (!tokens || tokens.length === 0) return;
+  const stringData = Object.fromEntries(
+    Object.entries(data).map(([k, v]) => [k, String(v)])
+  );
+  try {
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: { title, body },
+      data: stringData,
+    });
+    console.log(`FCM: ${response.successCount} sent, ${response.failureCount} failed`);
+  } catch (err) {
+    console.error('FCM error (non-fatal):', err);
+  }
 }
 
 router.get('/', auth, async (req, res, next) => {
@@ -120,7 +137,7 @@ router.post('/join', auth, async (req, res, next) => {
       [group.id, req.user.id]
     );
 
-    // Notify group owner
+    // Notify group owner via FCM
     try {
       const { rows: ownerTokens } = await pool.query(
         `SELECT dt.token FROM device_tokens dt
@@ -128,14 +145,13 @@ router.post('/join', auth, async (req, res, next) => {
          WHERE gm.group_id = $1 AND gm.role = 'owner'`,
         [group.id]
       );
-      for (const { token } of ownerTokens) {
-        await sendPush(
-          token,
-          group.name,
-          `${req.user.display_name} joined your group`,
-          { type: 'member_joined', groupId: group.id }
-        );
-      }
+      const tokens = ownerTokens.map(r => r.token);
+      await sendFCM(
+        tokens,
+        group.name,
+        `${req.user.display_name} joined your group`,
+        { type: 'member_joined', groupId: group.id }
+      );
     } catch (pushErr) {
       console.error('Push notification failed (non-fatal):', pushErr);
     }
