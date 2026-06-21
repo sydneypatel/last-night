@@ -7,7 +7,7 @@ import UserNotifications
 class AppDelegate: NSObject, UIApplicationDelegate {
     static weak var shared: AppDelegate?
     var appState: AppState?
-    
+
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         AppDelegate.shared = self
@@ -47,21 +47,25 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    // Shows notification when app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound, .badge])
     }
 
-    // Handles notification tap
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
-        if let groupId = userInfo["groupId"] as? String {
-            DispatchQueue.main.async {
+        let type = userInfo["type"] as? String
+
+        DispatchQueue.main.async {
+            if type == "photos_unlocked" || type == "member_joined",
+               let groupId = userInfo["groupId"] as? String {
                 AppDelegate.shared?.appState?.pendingGroupId = groupId
+            } else if type == "new_follower",
+                      let userId = userInfo["userId"] as? String {
+                AppDelegate.shared?.appState?.pendingFollowUserId = userId
             }
         }
         completionHandler()

@@ -1,13 +1,15 @@
 import SwiftUI
 
 struct SearchView: View {
+    @EnvironmentObject var appState: AppState
     @State private var query = ""
     @State private var results: [User] = []
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 Color.black.ignoresSafeArea()
 
@@ -32,7 +34,7 @@ struct SearchView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(results) { user in
-                                NavigationLink(destination: UserProfileView(username: user.username)) {
+                                NavigationLink(value: user.username) {
                                     SearchResultRow(user: user, onToggleFollow: { updated in
                                         if let idx = results.firstIndex(where: { $0.id == updated.id }) {
                                             results[idx] = updated
@@ -48,6 +50,9 @@ struct SearchView: View {
             }
             .navigationTitle("search")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(for: String.self) { username in
+                UserProfileView(username: username)
+            }
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "search by username")
             .onChange(of: query) { _, newValue in
                 searchTask?.cancel()
@@ -56,9 +61,25 @@ struct SearchView: View {
                     return
                 }
                 searchTask = Task {
-                    try? await Task.sleep(nanoseconds: 300_000_000) // debounce
+                    try? await Task.sleep(nanoseconds: 300_000_000)
                     guard !Task.isCancelled else { return }
                     await performSearch(newValue)
+                }
+            }
+            .onChange(of: appState.pendingFollowUserId) { _, userId in
+                guard let userId else { return }
+                // Fetch the username for this userId then navigate
+                Task {
+                    do {
+                        let user = try await APIClient.shared.getUser(id: userId)
+                        await MainActor.run {
+                            navigationPath.append(user.username)
+                            appState.pendingFollowUserId = nil
+                        }
+                    } catch {
+                        print("Error fetching follower profile:", error)
+                        appState.pendingFollowUserId = nil
+                    }
                 }
             }
         }

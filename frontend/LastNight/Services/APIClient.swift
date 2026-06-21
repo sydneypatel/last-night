@@ -114,6 +114,11 @@ class APIClient {
     }
     
     // MARK: - Social
+    
+    func getUser(id: String) async throws -> User {
+        let response: UserResponse = try await request(path: "/users/by-id/\(id)")
+        return response.user
+    }
 
     func searchUsers(query: String) async throws -> [User] {
         let response: UsersResponse = try await request(path: "/users/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)")

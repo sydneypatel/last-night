@@ -134,4 +134,15 @@ router.get('/:id/following', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/by-id/:id', auth, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, username, display_name, avatar_url, bio FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: rows[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
