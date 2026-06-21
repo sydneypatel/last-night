@@ -5,9 +5,12 @@ import GoogleSignIn
 import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-
+    static weak var shared: AppDelegate?
+    var appState: AppState?
+    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        AppDelegate.shared = self
         FirebaseApp.configure()
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
@@ -44,10 +47,24 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
+    // Shows notification when app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound, .badge])
+    }
+
+    // Handles notification tap
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        if let groupId = userInfo["groupId"] as? String {
+            DispatchQueue.main.async {
+                AppDelegate.shared?.appState?.pendingGroupId = groupId
+            }
+        }
+        completionHandler()
     }
 }
 
@@ -77,6 +94,9 @@ struct LastNightApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .onAppear {
+                    delegate.appState = appState
+                }
         }
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GroupsView: View {
+    @EnvironmentObject var appState: AppState
     @State private var groups: [Group] = []
     @State private var isLoading = true
     @State private var showingCreateGroup = false
@@ -8,9 +9,10 @@ struct GroupsView: View {
     @State private var inviteCode = ""
     @State private var toastMessage: String?
     @State private var joinError: String?
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 Color.black.ignoresSafeArea()
 
@@ -29,7 +31,7 @@ struct GroupsView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(groups) { group in
-                                NavigationLink(destination: GroupFeedView(group: group)) {
+                                NavigationLink(value: group) {
                                     GroupRowView(group: group)
                                 }
                             }
@@ -57,7 +59,7 @@ struct GroupsView: View {
                     .animation(.easeInOut, value: toastMessage)
                 }
             }
-            .navigationTitle("last night")
+            .navigationTitle("last night.")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -73,7 +75,26 @@ struct GroupsView: View {
                     }
                 }
             }
+            .navigationDestination(for: Group.self) { group in
+                GroupFeedView(group: group)
+            }
             .task { await loadGroups() }
+            .onChange(of: appState.pendingGroupId) { _, groupId in
+                guard let groupId else { return }
+                if let group = groups.first(where: { $0.id == groupId }) {
+                    navigationPath.append(group)
+                    appState.pendingGroupId = nil
+                } else {
+                    // Group not loaded yet — reload then navigate
+                    Task {
+                        await loadGroups()
+                        if let group = groups.first(where: { $0.id == groupId }) {
+                            navigationPath.append(group)
+                        }
+                        appState.pendingGroupId = nil
+                    }
+                }
+            }
             .sheet(isPresented: $showingCreateGroup) {
                 CreateGroupView(onCreated: { newGroup in
                     groups.insert(newGroup, at: 0)
@@ -133,7 +154,6 @@ struct GroupRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Cover photo or fallback
             ZStack {
                 if let urlStr = group.coverPhotoUrl, let url = URL(string: urlStr) {
                     AsyncImage(url: url) { image in

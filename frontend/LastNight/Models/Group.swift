@@ -1,6 +1,6 @@
 import Foundation
 
-struct Group: Codable, Identifiable {
+struct Group: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let coverPhotoUrl: String?
@@ -66,5 +66,13 @@ struct Group: Codable, Identifiable {
         } else if let strVal = try? c.decodeIfPresent(String.self, forKey: .photoCount) {
             photoCount = Int(strVal)
         }
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: Group, rhs: Group) -> Bool {
+        lhs.id == rhs.id
     }
 }

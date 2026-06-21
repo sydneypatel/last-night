@@ -7,6 +7,7 @@ class AppState: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
     @Published var isLoading = true
+    @Published var pendingGroupId: String? = nil
 
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 
