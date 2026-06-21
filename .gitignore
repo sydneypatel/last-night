@@ -44,3 +44,6 @@ backend/lambda/package-lock.json
 backend/lambda/node_modules/
 frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
 frontend/LastNight.xcodeproj/xcuserdata/
+backend/lambda/node_modules/
+frontend/LastNight.xcodeproj/xcuserdata/
+frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
