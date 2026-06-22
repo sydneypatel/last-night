@@ -11,6 +11,9 @@ struct GroupsView: View {
     @State private var toastMessage: String?
     @State private var joinError: String?
     @State private var navigationPath = NavigationPath()
+    @State private var shareGroup: Group?      // drives the share sheet
+    @State private var previewGroup: Group?    // drives the custom long-press popup
+    @State private var pressedGroupId: String?
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -32,9 +35,26 @@ struct GroupsView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(groups) { group in
-                                NavigationLink(value: group) {
-                                    GroupRowView(group: group)
-                                }
+                                GroupRowView(group: group, isPressed: pressedGroupId == group.id)
+                                    .onTapGesture {
+                                        navigationPath.append(group)
+                                    }
+                                    .onLongPressGesture(
+                                        minimumDuration: 0.2,
+                                        pressing: { pressing in
+                                            withAnimation(.easeInOut(duration: 0.15)) {
+                                                pressedGroupId = pressing ? group.id : nil
+                                            }
+                                        },
+                                        perform: {
+                                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                                            generator.impactOccurred()
+                                            pressedGroupId = nil
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                previewGroup = group
+                                            }
+                                        }
+                                    )
                             }
                         }
                         .padding()
@@ -93,7 +113,6 @@ struct GroupsView: View {
                     navigationPath.append(group)
                     appState.pendingGroupId = nil
                 } else {
-                    // Group not loaded yet — reload then navigate
                     Task {
                         await loadGroups()
                         if let group = groups.first(where: { $0.id == groupId }) {
@@ -113,6 +132,12 @@ struct GroupsView: View {
                     groups.insert(newGroup, at: 0)
                 })
             }
+            .sheet(item: $shareGroup) { group in
+                ShareSheet(items: [
+                    "join my group on last night :)",
+                    URL(string: InviteCode.link(for: group.inviteCode))!
+                ])
+            }
             .alert("join a group", isPresented: $showingJoinGroup) {
                 TextField("paste invite link or code", text: $inviteCode)
                     .autocapitalization(.allCharacters)
@@ -129,6 +154,34 @@ struct GroupsView: View {
             }
         }
         .preferredColorScheme(.dark)
+        // Custom long-press popup overlay
+        .overlay {
+            if let group = previewGroup {
+                GroupPreviewPopup(
+                    group: group,
+                    onShare: {
+                        let g = group
+                        dismissPreview()
+                        // slight delay so the popup dismiss animation finishes before the sheet
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            shareGroup = g
+                        }
+                    },
+                    onCopy: {
+                        UIPasteboard.general.string = InviteCode.link(for: group.inviteCode)
+                        dismissPreview()
+                        showToast("invite link copied")
+                    },
+                    onDismiss: { dismissPreview() }
+                )
+            }
+        }
+    }
+
+    private func dismissPreview() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            previewGroup = nil
+        }
     }
 
     private func loadGroups() async {
@@ -168,6 +221,7 @@ struct GroupsView: View {
 
 struct GroupRowView: View {
     let group: Group
+    var isPressed: Bool = false
 
     var body: some View {
         HStack(spacing: 14) {
@@ -205,7 +259,112 @@ struct GroupRowView: View {
                 .foregroundColor(.gray)
         }
         .padding()
-        .background(Color.white.opacity(0.05))
+        .background(Color.white.opacity(isPressed ? 0.12 : 0.05))
         .cornerRadius(16)
     }
+}
+
+// MARK: - Custom long-press popup
+
+struct GroupPreviewPopup: View {
+    let group: Group
+    var onShare: () -> Void
+    var onCopy: () -> Void
+    var onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            // Strong blurred + dimmed backdrop — tap to dismiss
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+                .ignoresSafeArea()
+                .overlay(Color.black.opacity(0.4).ignoresSafeArea())
+                .onTapGesture { onDismiss() }
+                .transition(.opacity)
+
+            // The card
+            VStack(spacing: 0) {
+                ZStack {
+                    if let urlStr = group.coverPhotoUrl, let url = URL(string: urlStr) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Color.white.opacity(0.08)
+                        }
+                    } else {
+                        Color.white.opacity(0.08)
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 56))
+                            .foregroundColor(.white.opacity(0.4))
+                    }
+                }
+                .frame(width: 300, height: 300)
+                .clipped()
+
+                VStack(spacing: 16) {
+                    Text(group.name)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            onCopy()
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.on.doc")
+                                Text("copy")
+                            }
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(12)
+                        }
+
+                        Button {
+                            onShare()
+                        } label: {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("share")
+                            }
+                            .fontWeight(.semibold)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .frame(width: 300)
+            .background(Color.black)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.5), radius: 30)
+            .transition(.scale(scale: 0.9).combined(with: .opacity))
+        }
+    }
+}
+
+// MARK: - iOS share sheet wrapper
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
