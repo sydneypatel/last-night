@@ -254,7 +254,10 @@ struct GroupFeedView: View {
                 currentUnlockAt = newUnlockAt
             }
         }
-        .task { await loadPhotos() }
+        .task {
+                    await loadPhotos()
+                    await loadGroupMeta()
+                }
         .onAppear {
             currentGroupName = group.name
             currentUnlockMode = group.unlockMode
@@ -296,6 +299,19 @@ struct GroupFeedView: View {
         }
         isLoading = false
     }
+    
+    private func loadGroupMeta() async {
+            do {
+                let (freshGroup, _) = try await APIClient.shared.getGroup(id: group.id)
+                await MainActor.run {
+                    currentGroupName = freshGroup.name
+                    currentUnlockMode = freshGroup.unlockMode
+                    currentUnlockAt = freshGroup.unlockAt
+                }
+            } catch {
+                print("Error loading group meta:", error)
+            }
+        }
 
     private func leaveGroup() {
         Task {
