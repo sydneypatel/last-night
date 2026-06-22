@@ -85,6 +85,7 @@ router.post('/', auth, async (req, res, next) => {
       [group.id, req.user.id]
     );
     await client.query('COMMIT');
+    group.role = 'owner';
     res.status(201).json({ group });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -98,12 +99,14 @@ router.get('/:id', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
   try {
     const { rows: memberCheck } = await pool.query(
-      'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
       [req.params.id, req.user.id]
     );
     if (memberCheck.length === 0) return res.status(403).json({ error: 'Not a member' });
     const { rows: groupRows } = await pool.query('SELECT * FROM groups WHERE id = $1', [req.params.id]);
     if (groupRows.length === 0) return res.status(404).json({ error: 'Group not found' });
+    const group = groupRows[0];
+    group.role = memberCheck[0].role;
     const { rows: members } = await pool.query(
       `SELECT u.id, u.username, u.display_name, u.avatar_url, gm.role, gm.joined_at
       FROM group_members gm
@@ -112,7 +115,7 @@ router.get('/:id', auth, async (req, res, next) => {
       ORDER BY gm.joined_at ASC`,
       [req.params.id]
     );
-    res.json({ group: groupRows[0], members });
+    res.json({ group, members });
   } catch (err) { next(err); }
 });
 
@@ -156,6 +159,7 @@ router.post('/join', auth, async (req, res, next) => {
       console.error('Push notification failed (non-fatal):', pushErr);
     }
 
+    group.role = 'member';
     res.status(201).json({ group });
   } catch (err) { next(err); }
 });
@@ -288,7 +292,9 @@ router.patch('/:id/unlock', auth, async (req, res, next) => {
       'UPDATE groups SET unlock_mode = $1, unlock_at = $2 WHERE id = $3 RETURNING *',
       [unlockMode, resolvedUnlockAt, req.params.id]
     );
-    res.json({ group: updated[0] });
+    const updatedGroup = updated[0];
+    updatedGroup.role = rows[0].role;
+    res.json({ group: updatedGroup });
   } catch (err) { next(err); }
 });
 
