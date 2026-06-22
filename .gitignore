@@ -47,3 +47,11 @@ frontend/LastNight.xcodeproj/xcuserdata/
 backend/lambda/node_modules/
 frontend/LastNight.xcodeproj/xcuserdata/
 frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
+
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+
+# Node modules
+node_modules/
