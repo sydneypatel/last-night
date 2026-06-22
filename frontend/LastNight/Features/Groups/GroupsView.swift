@@ -114,7 +114,7 @@ struct GroupsView: View {
                 })
             }
             .alert("join a group", isPresented: $showingJoinGroup) {
-                TextField("invite code", text: $inviteCode)
+                TextField("paste invite link or code", text: $inviteCode)
                     .autocapitalization(.allCharacters)
                 Button("join") { joinGroup() }
                 Button("cancel", role: .cancel) {}

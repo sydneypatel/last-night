@@ -216,7 +216,7 @@ struct ShareInviteView: View {
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                    Text("invite your friends to join the group by sharing the join link below:")
+                    Text("invite your friends to join the group by sharing the link below:")
                         .font(.title3)
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -257,7 +257,7 @@ struct ShareInviteView: View {
                     }
 
                     ShareLink(item: URL(string: inviteLink)!,
-                              message: Text("join my group on last night")) {
+                              message: Text("join my group on last night :)")) {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
                             Text("share")
