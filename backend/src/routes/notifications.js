@@ -19,4 +19,17 @@ router.post('/device-token', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.delete('/device-token', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'token is required' });
+  try {
+    await pool.query(
+      'DELETE FROM device_tokens WHERE token = $1 AND user_id = $2',
+      [token, req.user.id]
+    );
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
