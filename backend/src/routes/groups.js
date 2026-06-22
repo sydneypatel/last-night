@@ -15,11 +15,10 @@ function getTzParts(timeZone, date) {
   });
   const map = {};
   dtf.formatToParts(date).forEach(p => { map[p.type] = p.value; });
-  if (map.hour === '24') map.hour = '00'; // midnight edge case
+  if (map.hour === '24') map.hour = '00';
   return map;
 }
 
-// Offset of timeZone relative to UTC, in ms, at the given instant.
 function getOffsetMs(timeZone, date) {
   const m = getTzParts(timeZone, date);
   const asUTC = Date.UTC(+m.year, +m.month - 1, +m.day, +m.hour, +m.minute, +m.second);
@@ -27,19 +26,17 @@ function getOffsetMs(timeZone, date) {
 }
 
 // Convert a wall-clock time in timeZone to the correct UTC instant.
+// Single offset application — exact for any non-DST-transition time.
 function zonedWallClockToUtc(year, month, day, hour, minute, timeZone) {
-  let utc = Date.UTC(year, month - 1, day, hour, minute, 0);
-  for (let i = 0; i < 2; i++) { // 2 passes handles DST boundaries
-    const offset = getOffsetMs(timeZone, new Date(utc));
-    utc = Date.UTC(year, month - 1, day, hour, minute, 0) - offset;
-  }
-  return new Date(utc);
+  const guess = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const offset = getOffsetMs(timeZone, new Date(guess));
+  return new Date(guess - offset);
 }
 
 function getNextSunrise(timezone) {
   const today = getTzParts(timezone, new Date());
   const base = new Date(Date.UTC(+today.year, +today.month - 1, +today.day));
-  base.setUTCDate(base.getUTCDate() + 1); // tomorrow, in user's local date
+  base.setUTCDate(base.getUTCDate() + 1);
   return zonedWallClockToUtc(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(), 6, 30, timezone);
 }
 
@@ -172,7 +169,6 @@ router.post('/join', auth, async (req, res, next) => {
       [group.id, req.user.id]
     );
 
-    // Notify group owner via FCM
     try {
       const { rows: ownerTokens } = await pool.query(
         `SELECT dt.token FROM device_tokens dt
