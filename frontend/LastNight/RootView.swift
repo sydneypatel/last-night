@@ -2,13 +2,20 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         SwiftUI.Group {
             if appState.isLoading {
                 SplashView()
             } else if appState.isAuthenticated, appState.currentUser != nil {
-                MainTabView()
+                if hasSeenOnboarding {
+                    MainTabView()
+                } else {
+                    OnboardingView {
+                        hasSeenOnboarding = true
+                    }
+                }
             } else {
                 LoginView()
             }

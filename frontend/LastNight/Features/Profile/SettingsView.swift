@@ -285,6 +285,7 @@ struct AdvancedSettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingDeleteAccount = false
     @State private var showingPrivacyPolicy = false
+    @State private var showingHowItWorks = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -293,6 +294,23 @@ struct AdvancedSettingsView: View {
 
             VStack(spacing: 0) {
                 VStack(spacing: 12) {
+                    Button {
+                        showingHowItWorks = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                            Text("how it works")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
+
                     Button {
                         showingPrivacyPolicy = true
                     } label: {
@@ -341,6 +359,11 @@ struct AdvancedSettingsView: View {
         }
         .navigationTitle("more")
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showingHowItWorks) {
+            OnboardingView {
+                showingHowItWorks = false
+            }
+        }
         .sheet(isPresented: $showingPrivacyPolicy) {
             LegalSheetView()
         }
