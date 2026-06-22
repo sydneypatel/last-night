@@ -263,4 +263,33 @@ router.patch('/:id/name', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.patch('/:id/unlock', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  const { unlockMode, unlockAt, timezone = req.user.timezone } = req.body;
+  const validModes = ['sunrise', 'custom', 'sunday_night'];
+  if (!validModes.includes(unlockMode)) return res.status(400).json({ error: 'invalid unlockMode' });
+  if (unlockMode === 'custom' && !unlockAt) return res.status(400).json({ error: 'unlockAt is required for custom mode' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (rows.length === 0) return res.status(403).json({ error: 'Not a member' });
+    if (rows[0].role !== 'owner') return res.status(403).json({ error: 'Only owners can change the unlock time' });
+
+    let resolvedUnlockAt = unlockAt || null;
+    if (unlockMode === 'sunrise') {
+      resolvedUnlockAt = getNextSunrise(timezone);
+    } else if (unlockMode === 'sunday_night') {
+      resolvedUnlockAt = getNextSundayNight(timezone);
+    }
+
+    const { rows: updated } = await pool.query(
+      'UPDATE groups SET unlock_mode = $1, unlock_at = $2 WHERE id = $3 RETURNING *',
+      [unlockMode, resolvedUnlockAt, req.params.id]
+    );
+    res.json({ group: updated[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
