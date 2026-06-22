@@ -81,14 +81,18 @@ router.post('/:id/follow', auth, async (req, res, next) => {
         [targetId]
       );
       const tokens = tokenRows.map(r => r.token);
-      await sendFCM(
+      console.log(`[FOLLOW] target ${targetId} has ${tokens.length} token(s)`);
+      const result = await admin.messaging().sendEachForMulticast({
         tokens,
-        'new follower',
-        `${req.user.display_name} started following you`,
-        { type: 'new_follower', userId: req.user.id }
-      );
+        notification: { title: 'new follower', body: `${req.user.display_name} started following you` },
+        data: { type: 'new_follower', userId: String(req.user.id) },
+      });
+      console.log(`[FOLLOW] FCM sent: ${result.successCount} ok, ${result.failureCount} failed`);
+      result.responses.forEach((r, i) => {
+        if (!r.success) console.log(`[FOLLOW] token ${i} failed:`, r.error?.message);
+      });
     } catch (pushErr) {
-      console.error('Follow push failed (non-fatal):', pushErr);
+      console.error('Follow push failed:', pushErr);
     }
 
     res.status(201).json({ following: true });
