@@ -4,39 +4,52 @@ const pool = require('../config/db');
 const auth = require('../middleware/auth');
 const admin = require('../config/firebaseAdmin');
 
-// Computes an absolute instant for a given wall-clock time on a given
-// calendar date in the user's timezone (server-timezone independent).
-function zonedDateAtTime(baseInstant, timezone, timeStr) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(baseInstant);
+// --- Timezone helpers (numeric, environment-independent) ---
 
-  const year = parts.find(p => p.type === 'year').value;
-  const month = parts.find(p => p.type === 'month').value;
-  const day = parts.find(p => p.type === 'day').value;
+function getTzParts(timeZone, date) {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  });
+  const map = {};
+  dtf.formatToParts(date).forEach(p => { map[p.type] = p.value; });
+  if (map.hour === '24') map.hour = '00'; // midnight edge case
+  return map;
+}
 
-  const target = new Date(year + '-' + month + '-' + day + 'T' + timeStr);
-  const localTime = new Date(baseInstant.toLocaleString('en-US', { timeZone: timezone }));
-  const utcOffset = localTime - baseInstant;
-  return new Date(target.getTime() - utcOffset);
+// Offset of timeZone relative to UTC, in ms, at the given instant.
+function getOffsetMs(timeZone, date) {
+  const m = getTzParts(timeZone, date);
+  const asUTC = Date.UTC(+m.year, +m.month - 1, +m.day, +m.hour, +m.minute, +m.second);
+  return asUTC - date.getTime();
+}
+
+// Convert a wall-clock time in timeZone to the correct UTC instant.
+function zonedWallClockToUtc(year, month, day, hour, minute, timeZone) {
+  let utc = Date.UTC(year, month - 1, day, hour, minute, 0);
+  for (let i = 0; i < 2; i++) { // 2 passes handles DST boundaries
+    const offset = getOffsetMs(timeZone, new Date(utc));
+    utc = Date.UTC(year, month - 1, day, hour, minute, 0) - offset;
+  }
+  return new Date(utc);
 }
 
 function getNextSunrise(timezone) {
-  const tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  return zonedDateAtTime(tomorrow, timezone, '06:30:00');
+  const today = getTzParts(timezone, new Date());
+  const base = new Date(Date.UTC(+today.year, +today.month - 1, +today.day));
+  base.setUTCDate(base.getUTCDate() + 1); // tomorrow, in user's local date
+  return zonedWallClockToUtc(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(), 6, 30, timezone);
 }
 
 function getNextSundayNight(timezone) {
-  const now = new Date();
-  const userWeekday = new Date(now.toLocaleString('en-US', { timeZone: timezone })).getDay();
-  const daysUntilSunday = (7 - userWeekday) % 7 || 7;
-  const targetDay = new Date(now);
-  targetDay.setUTCDate(targetDay.getUTCDate() + daysUntilSunday);
-  return zonedDateAtTime(targetDay, timezone, '23:59:00');
+  const today = getTzParts(timezone, new Date());
+  const base = new Date(Date.UTC(+today.year, +today.month - 1, +today.day));
+  const weekday = base.getUTCDay();
+  const daysUntilSunday = (7 - weekday) % 7 || 7;
+  base.setUTCDate(base.getUTCDate() + daysUntilSunday);
+  return zonedWallClockToUtc(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(), 23, 59, timezone);
 }
 
 async function sendFCM(tokens, title, body, data = {}) {
