@@ -24,7 +24,7 @@ struct MainTabView: View {
         }
         .tint(.white)
         .preferredColorScheme(.dark)
-        .onChange(of: appState.pendingFollowUserId) { newValue in
+        .onChange(of: appState.pendingFollowUserId) { _, newValue in
             guard newValue != nil else { return }
             selectedTab = 2
         }

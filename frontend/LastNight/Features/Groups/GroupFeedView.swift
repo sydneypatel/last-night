@@ -15,6 +15,11 @@ struct GroupFeedView: View {
     @State private var showingDeleteConfirm = false
     @State private var currentGroupName: String = ""
 
+    // Unlock state (mutable so label updates live after editing)
+    @State private var currentUnlockMode: Group.UnlockMode = .sunrise
+    @State private var currentUnlockAt: Date?
+    @State private var showingEditUnlock = false
+
     // Cover photo state
     @State private var currentCoverUrl: String?
     @State private var showingCoverPhotoSourcePicker = false
@@ -32,13 +37,13 @@ struct GroupFeedView: View {
     ]
 
     private var isUnlocked: Bool {
-        guard let unlockAt = group.unlockAt else { return false }
+        guard let unlockAt = currentUnlockAt else { return false }
         return unlockAt <= Date()
     }
 
     private var unlockLabel: String {
-        guard let unlockAt = group.unlockAt else {
-            switch group.unlockMode {
+        guard let unlockAt = currentUnlockAt else {
+            switch currentUnlockMode {
             case .sunrise: return "photos unlock at sunrise"
             case .sundayNight: return "photos unlock sunday night"
             case .custom: return "photos unlock at custom time"
@@ -50,7 +55,7 @@ struct GroupFeedView: View {
             formatter.timeStyle = .short
             return "unlocked \(formatter.string(from: unlockAt))"
         } else {
-            switch group.unlockMode {
+            switch currentUnlockMode {
             case .sunrise: return "photos unlock at sunrise"
             case .sundayNight: return "photos unlock sunday night"
             case .custom:
@@ -169,15 +174,20 @@ struct GroupFeedView: View {
                     Button { showingMembers = true } label: {
                         Label("members", systemImage: "person.2.fill")
                     }
+                    Button { showingCoverPhotoSourcePicker = true } label: {
+                        Label("change cover photo", systemImage: "photo")
+                    }
+                    Button {
+                        newGroupName = currentGroupName
+                        showingRenameGroup = true
+                    } label: {
+                        Label("rename group", systemImage: "pencil")
+                    }
                     if group.role == .owner {
-                        Button { showingCoverPhotoSourcePicker = true } label: {
-                            Label("change cover photo", systemImage: "photo")
-                        }
                         Button {
-                            newGroupName = currentGroupName
-                            showingRenameGroup = true
+                            showingEditUnlock = true
                         } label: {
-                            Label("rename group", systemImage: "pencil")
+                            Label("change unlock time", systemImage: "clock")
                         }
                         Button(role: .destructive) {
                             showingDeleteConfirm = true
@@ -234,9 +244,21 @@ struct GroupFeedView: View {
                 Task { await uploadCoverPhoto(image: image) }
             }
         }
+        .sheet(isPresented: $showingEditUnlock) {
+            EditUnlockTimeView(
+                currentMode: currentUnlockMode,
+                currentUnlockAt: currentUnlockAt,
+                groupId: group.id
+            ) { newMode, newUnlockAt in
+                currentUnlockMode = newMode
+                currentUnlockAt = newUnlockAt
+            }
+        }
         .task { await loadPhotos() }
         .onAppear {
             currentGroupName = group.name
+            currentUnlockMode = group.unlockMode
+            currentUnlockAt = group.unlockAt
         }
         .fullScreenCover(isPresented: $showingCamera) {
                     CameraView(groupId: group.id, onPhotoTaken: { newPhoto in
@@ -364,5 +386,123 @@ struct PhotoGridCell: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .clipped()
+    }
+}
+
+struct EditUnlockTimeView: View {
+    let groupId: String
+    let onSaved: (Group.UnlockMode, Date?) -> Void
+    @Environment(\.dismiss) var dismiss
+
+    @State private var selectedMode: String
+    @State private var customDate: Date
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    init(currentMode: Group.UnlockMode, currentUnlockAt: Date?, groupId: String, onSaved: @escaping (Group.UnlockMode, Date?) -> Void) {
+        self.groupId = groupId
+        self.onSaved = onSaved
+        switch currentMode {
+        case .sunrise: _selectedMode = State(initialValue: "sunrise")
+        case .sundayNight: _selectedMode = State(initialValue: "sunday_night")
+        case .custom: _selectedMode = State(initialValue: "custom")
+        }
+        _customDate = State(initialValue: currentUnlockAt ?? Date().addingTimeInterval(3600))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("when should photos unlock?")
+                        .font(.headline)
+                        .foregroundColor(.white)
+
+                    VStack(spacing: 0) {
+                        modeRow(label: "sunrise", value: "sunrise", subtitle: "next morning at 6:30am")
+                        Divider().background(Color.white.opacity(0.1))
+                        modeRow(label: "sunday night", value: "sunday_night", subtitle: "this sunday at 11:59pm")
+                        Divider().background(Color.white.opacity(0.1))
+                        modeRow(label: "custom", value: "custom", subtitle: "pick a date and time")
+                    }
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(14)
+
+                    if selectedMode == "custom" {
+                        DatePicker("unlock at", selection: $customDate)
+                            .datePickerStyle(.compact)
+                            .colorScheme(.dark)
+                            .tint(.white)
+                            .foregroundColor(.white)
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage).font(.caption).foregroundColor(.red)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+            }
+            .navigationTitle("unlock time")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("cancel") { dismiss() }.tint(.white)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isSaving {
+                        ProgressView().tint(.white)
+                    } else {
+                        Button("save") { save() }.tint(.white).fontWeight(.semibold)
+                    }
+                }
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    private func modeRow(label: String, value: String, subtitle: String) -> some View {
+        Button {
+            selectedMode = value
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label).foregroundColor(.white)
+                    Text(subtitle).font(.caption).foregroundColor(.gray)
+                }
+                Spacer()
+                if selectedMode == value {
+                    Image(systemName: "checkmark").foregroundColor(.white)
+                }
+            }
+            .padding()
+            .contentShape(Rectangle())
+        }
+    }
+
+    private func save() {
+        isSaving = true
+        errorMessage = nil
+        let unlockAt: Date? = selectedMode == "custom" ? customDate : nil
+        Task {
+            do {
+                let updated = try await APIClient.shared.updateUnlockTime(
+                    groupId: groupId,
+                    unlockMode: selectedMode,
+                    unlockAt: unlockAt
+                )
+                await MainActor.run {
+                    onSaved(updated.unlockMode, updated.unlockAt)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isSaving = false
+                    errorMessage = "couldn't update unlock time"
+                }
+            }
+        }
     }
 }

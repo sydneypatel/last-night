@@ -178,6 +178,19 @@ class APIClient {
         return (response.group, response.members)
     }
     
+    func updateUnlockTime(groupId: String, unlockMode: String, unlockAt: Date?) async throws -> Group {
+            var body: [String: Any] = ["unlockMode": unlockMode]
+            if let unlockAt {
+                body["unlockAt"] = ISO8601DateFormatter().string(from: unlockAt)
+            }
+            let response: GroupResponse = try await request(
+                path: "/groups/\(groupId)/unlock",
+                method: "PATCH",
+                body: body
+            )
+            return response.group
+        }
+    
     func leaveOrDeleteGroup(id: String) async throws {
         let _: EmptyResponse = try await request(path: "/groups/\(id)", method: "DELETE")
     }
