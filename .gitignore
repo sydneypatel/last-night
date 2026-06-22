@@ -55,3 +55,7 @@ xcuserdata/
 
 # Node modules
 node_modules/
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
