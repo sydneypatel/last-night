@@ -76,30 +76,52 @@ struct GroupFeedView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
-                        Button {
-                            UIPasteboard.general.string = group.inviteCode
-                            withAnimation { showCopied = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation { showCopied = false }
-                            }
-                        } label: {
+                        VStack(spacing: 6) {
                             HStack(spacing: 12) {
-                                Image(systemName: "link").font(.body)
-                                Text("invite code:").font(.caption).foregroundColor(.gray)
-                                Text(group.inviteCode).font(.body).fontWeight(.bold).tracking(2)
-                                Spacer()
-                                Text(showCopied ? "copied!" : "tap to copy").font(.caption).foregroundColor(.gray)
+                                Button {
+                                    UIPasteboard.general.string = InviteCode.link(for: group.inviteCode)
+                                    withAnimation { showCopied = true }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        withAnimation { showCopied = false }
+                                    }
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: showCopied ? "checkmark" : "link").font(.body)
+                                        Text(showCopied ? "copied!" : "copy invite link")
+                                            .font(.body).fontWeight(.medium)
+                                        Spacer()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white.opacity(0.12))
+                                    .cornerRadius(14)
+                                }
+                                
+                                ShareLink(
+                                    item: URL(string: InviteCode.link(for: group.inviteCode))!,
+                                    message: Text("join my group on last night")
+                                ) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.body)
+                                        .foregroundColor(.white)
+                                        .frame(width: 54, height: 54)
+                                        .background(Color.white.opacity(0.12))
+                                        .cornerRadius(14)
+                                }
                             }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 18)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(14)
+                            
+                            HStack {
+                                Text("or share code: \(group.inviteCode)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 4)
                         }
                         .padding(.horizontal)
                         .padding(.top, 12)
                         .padding(.bottom, 8)
-
                         HStack(spacing: 6) {
                             Image(systemName: isUnlocked ? "lock.open.fill" : "lock.fill")
                                 .font(.caption2)
@@ -139,7 +161,7 @@ struct GroupFeedView: View {
                     await loadPhotos()
                 }
             }
-
+            
             VStack {
                 Spacer()
                 Button {
@@ -154,7 +176,7 @@ struct GroupFeedView: View {
                 }
                 .padding(.bottom, 32)
             }
-
+            
             if isUploadingCover {
                 VStack {
                     ProgressView("updating cover photo…")
