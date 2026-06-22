@@ -37,7 +37,7 @@ struct LegalSheetView: View {
                     .padding()
 
                     ScrollView {
-                        Group {
+                        SwiftUI.Group {
                             if selectedPage == .terms {
                                 TermsContent()
                             } else {

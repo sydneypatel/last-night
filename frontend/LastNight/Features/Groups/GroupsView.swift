@@ -134,7 +134,6 @@ struct GroupsView: View {
             }
             .sheet(item: $shareGroup) { group in
                 ShareSheet(items: [
-                    "join my group on last night :)",
                     URL(string: InviteCode.link(for: group.inviteCode))!
                 ])
             }
