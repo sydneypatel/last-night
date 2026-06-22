@@ -6,6 +6,7 @@ struct GroupsView: View {
     @State private var isLoading = true
     @State private var showingCreateGroup = false
     @State private var showingJoinGroup = false
+    @State private var showingHelp = false
     @State private var inviteCode = ""
     @State private var toastMessage: String?
     @State private var joinError: String?
@@ -64,6 +65,11 @@ struct GroupsView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
+                        showingHelp = true
+                    } label: {
+                        Image(systemName: "questionmark")
+                    }
+                    Button {
                         showingJoinGroup = true
                     } label: {
                         Image(systemName: "link")
@@ -93,6 +99,11 @@ struct GroupsView: View {
                         }
                         appState.pendingGroupId = nil
                     }
+                }
+            }
+            .fullScreenCover(isPresented: $showingHelp) {
+                OnboardingView {
+                    showingHelp = false
                 }
             }
             .sheet(isPresented: $showingCreateGroup) {

@@ -298,8 +298,8 @@ struct AdvancedSettingsView: View {
                         showingHowItWorks = true
                     } label: {
                         HStack {
-                            Image(systemName: "questionmark.circle")
-                            Text("how it works")
+                            Image(systemName: "questionmark")
+                            Text(" how it works")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.caption)
