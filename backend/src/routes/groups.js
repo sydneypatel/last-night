@@ -4,20 +4,39 @@ const pool = require('../config/db');
 const auth = require('../middleware/auth');
 const admin = require('../config/firebaseAdmin');
 
+// Computes an absolute instant for a given wall-clock time on a given
+// calendar date in the user's timezone (server-timezone independent).
+function zonedDateAtTime(baseInstant, timezone, timeStr) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(baseInstant);
+
+  const year = parts.find(p => p.type === 'year').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const day = parts.find(p => p.type === 'day').value;
+
+  const target = new Date(year + '-' + month + '-' + day + 'T' + timeStr);
+  const localTime = new Date(baseInstant.toLocaleString('en-US', { timeZone: timezone }));
+  const utcOffset = localTime - baseInstant;
+  return new Date(target.getTime() - utcOffset);
+}
+
 function getNextSunrise(timezone) {
   const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toLocaleDateString('en-US', { timeZone: timezone });
-  return new Date(tomorrowStr + ' 06:30:00');
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  return zonedDateAtTime(tomorrow, timezone, '06:30:00');
 }
 
 function getNextSundayNight(timezone) {
   const now = new Date();
-  const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
-  const nextSunday = new Date(now);
-  nextSunday.setDate(now.getDate() + daysUntilSunday);
-  const sundayStr = nextSunday.toLocaleDateString('en-US', { timeZone: timezone });
-  return new Date(sundayStr + ' 23:59:00');
+  const userWeekday = new Date(now.toLocaleString('en-US', { timeZone: timezone })).getDay();
+  const daysUntilSunday = (7 - userWeekday) % 7 || 7;
+  const targetDay = new Date(now);
+  targetDay.setUTCDate(targetDay.getUTCDate() + daysUntilSunday);
+  return zonedDateAtTime(targetDay, timezone, '23:59:00');
 }
 
 async function sendFCM(tokens, title, body, data = {}) {
