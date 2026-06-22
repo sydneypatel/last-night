@@ -10,6 +10,8 @@ struct UsernameSetupView: View {
     @State private var acceptedTerms = false
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showingLegal = false
+    @State private var legalPage: LegalSheetView.Page = .terms
 
     var canProceed: Bool {
         !username.isEmpty && !displayName.isEmpty && acceptedTerms
@@ -82,11 +84,19 @@ struct UsernameSetupView: View {
                                 Text("Terms & Conditions")
                                     .foregroundColor(.white)
                                     .underline()
+                                    .onTapGesture {
+                                        legalPage = .terms
+                                        showingLegal = true
+                                    }
                                 Text("and")
                                     .foregroundColor(.gray)
                                 Text("Privacy Policy")
                                     .foregroundColor(.white)
                                     .underline()
+                                    .onTapGesture {
+                                        legalPage = .privacy
+                                        showingLegal = true
+                                    }
                             }
                             .font(.caption)
                         }
@@ -122,6 +132,9 @@ struct UsernameSetupView: View {
                 .padding(.bottom, 48)
                 .disabled(!canProceed || isLoading)
             }
+        }
+        .sheet(isPresented: $showingLegal) {
+            LegalSheetView(initialPage: legalPage)
         }
     }
 

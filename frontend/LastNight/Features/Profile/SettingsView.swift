@@ -315,8 +315,8 @@ struct AdvancedSettingsView: View {
                         showingPrivacyPolicy = true
                     } label: {
                         HStack {
-                            Image(systemName: "hand.raised")
-                            Text("privacy policy")
+                            Image(systemName: "doc.text")
+                            Text("terms & privacy")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.caption)
@@ -365,7 +365,7 @@ struct AdvancedSettingsView: View {
             }
         }
         .sheet(isPresented: $showingPrivacyPolicy) {
-            LegalSheetView()
+            LegalSheetView(initialPage: .terms)
         }
         .alert("delete account", isPresented: $showingDeleteAccount) {
             Button("delete", role: .destructive) { deleteAccount() }
