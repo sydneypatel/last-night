@@ -42,30 +42,30 @@ struct GroupFeedView: View {
     }
 
     private var unlockLabel: String {
-        guard let unlockAt = currentUnlockAt else {
-            switch currentUnlockMode {
-            case .sunrise: return "photos unlock at sunrise"
-            case .sundayNight: return "photos unlock sunday night"
-            case .custom: return "photos unlock at custom time"
+            guard let unlockAt = currentUnlockAt else {
+                switch currentUnlockMode {
+                case .sunrise: return "photos unlock at sunrise"
+                case .sundayNight: return "photos unlock sunday night"
+                case .custom: return "photos unlock at custom time"
+                }
             }
-        }
-        if isUnlocked {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .short
-            return "unlocked \(formatter.string(from: unlockAt))"
-        } else {
-            switch currentUnlockMode {
-            case .sunrise: return "photos unlock at sunrise"
-            case .sundayNight: return "photos unlock sunday night"
-            case .custom:
+            if isUnlocked {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .medium
                 formatter.timeStyle = .short
-                return "unlocks \(formatter.string(from: unlockAt))"
+                return "unlocked \(formatter.string(from: unlockAt))"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .short
+                let dateStr = formatter.string(from: unlockAt)
+                switch currentUnlockMode {
+                case .sunrise: return "photos unlock at sunrise · \(dateStr)"
+                case .sundayNight: return "photos unlock sunday night · \(dateStr)"
+                case .custom: return "unlocks \(dateStr)"
+                }
             }
         }
-    }
     
     var body: some View {
         ZStack {
