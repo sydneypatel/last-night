@@ -10,7 +10,6 @@ const BUCKET = process.env.S3_BUCKET_NAME;
 const CLOUDFRONT = process.env.CLOUDFRONT_DOMAIN;
 
 async function attachUrl(photo) {
-  console.log('=== attachUrl called, s3_key:', photo.s3_key, 'CLOUDFRONT:', CLOUDFRONT);
   if (!photo.s3_key) return { ...photo, url: null };
   const url = CLOUDFRONT
     ? `${CLOUDFRONT}/${photo.s3_key}`
@@ -19,25 +18,25 @@ async function attachUrl(photo) {
         new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }),
         { expiresIn: 3600 }
       );
-  console.log('=== url generated:', url);
   return { ...photo, url };
 }
 
 /**
  * GET /featured/me/library
- * Get all unlocked photos this user has taken — for picking featured photos
+ * Photos the user has saved to their personal library — for picking featured photos.
+ * Returns saved photos regardless of who took them, as long as still unlocked.
  * MUST be before /:username to avoid route conflict
  */
 router.get('/me/library', auth, async (req, res, next) => {
-  console.log('=== /me/library hit, user:', req.user?.username);
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, g.name AS group_name
-       FROM photos p
+      `SELECT p.*, pl.saved_at, g.name AS group_name
+       FROM personal_library pl
+       JOIN photos p ON p.id = pl.photo_id
        JOIN groups g ON g.id = p.group_id
-       WHERE p.user_id = $1 AND p.locked = FALSE
-       ORDER BY p.captured_at DESC`,
+       WHERE pl.user_id = $1 AND p.locked = FALSE
+       ORDER BY pl.saved_at DESC`,
       [req.user.id]
     );
     const withUrls = await Promise.all(rows.map(attachUrl));
@@ -48,10 +47,10 @@ router.get('/me/library', auth, async (req, res, next) => {
 /**
  * PUT /featured/me/:position
  * Set a photo in a specific slot (1-9). Send photoId: null to clear the slot.
+ * Photo must be in the user's personal library and unlocked.
  * MUST be before /:username to avoid route conflict
  */
 router.put('/me/:position', auth, async (req, res, next) => {
-  console.log('=== PUT /me/:position hit, position:', req.params.position, 'photoId:', req.body.photoId, 'user:', req.user?.username);
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
 
   const position = parseInt(req.params.position);
@@ -71,11 +70,14 @@ router.put('/me/:position', auth, async (req, res, next) => {
     }
 
     const { rows: photoRows } = await pool.query(
-      'SELECT * FROM photos WHERE id = $1 AND user_id = $2 AND locked = FALSE',
-      [photoId, req.user.id]
+      `SELECT p.id
+       FROM personal_library pl
+       JOIN photos p ON p.id = pl.photo_id
+       WHERE pl.user_id = $1 AND pl.photo_id = $2 AND p.locked = FALSE`,
+      [req.user.id, photoId]
     );
     if (photoRows.length === 0) {
-      return res.status(403).json({ error: 'Photo not found or still locked' });
+      return res.status(403).json({ error: 'Photo not in your library or still locked' });
     }
 
     const { rows } = await pool.query(
@@ -101,7 +103,6 @@ router.put('/me/:position', auth, async (req, res, next) => {
  * MUST be after /me routes
  */
 router.get('/:username', auth, async (req, res, next) => {
-  console.log('=== /:username hit, username:', req.params.username);
   try {
     const { rows: userRows } = await pool.query(
       'SELECT id FROM users WHERE LOWER(username) = $1',
