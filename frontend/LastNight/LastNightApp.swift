@@ -76,6 +76,7 @@ extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken else { return }
         print("✅ FCM token:", fcmToken)
+        AppState.latestFCMToken = fcmToken   // stash for post-auth registration
         Task {
             try? await APIClient.shared.registerDeviceToken(fcmToken, environment: "fcm")
         }

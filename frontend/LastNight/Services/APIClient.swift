@@ -113,6 +113,14 @@ class APIClient {
         )
     }
     
+    func unregisterDeviceToken(_ token: String) async throws {
+            let _: EmptyResponse = try await request(
+                path: "/notifications/device-token",
+                method: "DELETE",
+                body: ["token": token]
+            )
+        }
+    
     // MARK: - Social
     
     func getUser(id: String) async throws -> User {

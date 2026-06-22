@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import FirebaseAuth
+import FirebaseMessaging
 
 @MainActor
 class AppState: ObservableObject {
@@ -10,6 +11,11 @@ class AppState: ObservableObject {
     @Published var pendingGroupId: String? = nil
     @Published var pendingFollowUserId: String? = nil
     @Published var pendingInviteCode: String? = nil
+
+    // Latest FCM token, stashed by AppDelegate when it arrives. Used to
+    // re-register the token after authentication completes (fixes the race
+    // where FCM fires its token before a fresh user has signed in).
+    static var latestFCMToken: String?
 
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 
@@ -39,6 +45,9 @@ class AppState: ObservableObject {
             self.isAuthenticated = true
             // Process any invite that was tapped before sign-in completed
             await self.processPendingInviteIfReady()
+            // Register push token now that we're authenticated (catches fresh
+            // sign-ups where FCM fired its token before auth existed).
+            await self.registerPushTokenIfAvailable()
         } catch APIError.notFound {
             self.currentUser = nil
             self.isAuthenticated = false
@@ -60,6 +69,22 @@ class AppState: ObservableObject {
         isAuthenticated = false
     }
 
+    // MARK: - Push token registration
+
+    /// Registers the device's FCM token with the backend. Called after auth
+    /// succeeds so the token always saves, even if FCM delivered it before login.
+    func registerPushTokenIfAvailable() async {
+        // Prefer the stashed token; otherwise actively fetch the current one.
+        if let token = AppState.latestFCMToken {
+            try? await APIClient.shared.registerDeviceToken(token, environment: "fcm")
+            return
+        }
+        if let token = try? await Messaging.messaging().token() {
+            AppState.latestFCMToken = token
+            try? await APIClient.shared.registerDeviceToken(token, environment: "fcm")
+        }
+    }
+
     // MARK: - Deep link invite handling
 
     /// Called when a universal link with a join code is opened.
@@ -73,12 +98,11 @@ class AppState: ObservableObject {
     func processPendingInviteIfReady() async {
         guard let code = pendingInviteCode else { return }
         guard isAuthenticated, currentUser != nil else { return }
-        
+
         do {
             let (group, isMember) = try await APIClient.shared.getGroupByCode(code)
             pendingInviteCode = nil
             if isMember {
-                // Already in — just navigate, no re-join
                 pendingGroupId = group.id
             } else {
                 let joined = try await APIClient.shared.joinGroup(inviteCode: code)

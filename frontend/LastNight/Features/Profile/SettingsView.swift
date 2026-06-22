@@ -126,6 +126,7 @@ struct SettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
+                    NotificationToggleRow()
                 }
                 .padding(.horizontal, 24)
 
@@ -279,6 +280,79 @@ struct SettingsView: View {
 private struct CroppableImage: Identifiable {
     let id = UUID()
     let image: UIImage
+}
+
+struct NotificationToggleRow: View {
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @State private var systemAuthorized = true
+    @State private var showSettingsAlert = false
+
+    var body: some View {
+        Button {
+            handleTap()
+        } label: {
+            HStack {
+                Image(systemName: notificationsEnabled && systemAuthorized ? "bell.fill" : "bell.slash")
+                Text("notifications")
+                Spacer()
+                // Visual toggle (non-interactive; the row handles taps)
+                Toggle("", isOn: Binding(
+                    get: { notificationsEnabled && systemAuthorized },
+                    set: { _ in handleTap() }
+                ))
+                .labelsHidden()
+                .tint(.white)
+            }
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(12)
+        }
+        .task { await refreshAuthStatus() }
+        .alert("notifications are off", isPresented: $showSettingsAlert) {
+            Button("open settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("turn on notifications for Last Night in your device settings to get alerts.")
+        }
+    }
+
+    private func handleTap() {
+        Task {
+            await refreshAuthStatus()
+
+            // If iOS permission is denied, we can't enable in-app — send to Settings.
+            if !systemAuthorized {
+                showSettingsAlert = true
+                return
+            }
+
+            if notificationsEnabled {
+                // Turn OFF — remove this device's token
+                notificationsEnabled = false
+                if let token = AppState.latestFCMToken ?? (try? await Messaging.messaging().token()) {
+                    try? await APIClient.shared.unregisterDeviceToken(token)
+                }
+            } else {
+                // Turn ON — re-register the token
+                notificationsEnabled = true
+                if let token = AppState.latestFCMToken ?? (try? await Messaging.messaging().token()) {
+                    AppState.latestFCMToken = token
+                    try? await APIClient.shared.registerDeviceToken(token, environment: "fcm")
+                }
+            }
+        }
+    }
+
+    private func refreshAuthStatus() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        systemAuthorized = settings.authorizationStatus == .authorized
+            || settings.authorizationStatus == .provisional
+    }
 }
 
 struct AdvancedSettingsView: View {
