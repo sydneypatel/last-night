@@ -11,9 +11,11 @@ struct CreateGroupView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    // Avatar picker
     @State private var selectedItem: PhotosPickerItem?
     @State private var coverImage: UIImage?
+
+    // Share-after-create
+    @State private var createdGroup: Group?
 
     var body: some View {
         NavigationStack {
@@ -21,8 +23,6 @@ struct CreateGroupView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 28) {
-
-                    // Cover photo picker
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         ZStack {
                             if let coverImage {
@@ -116,6 +116,15 @@ struct CreateGroupView: View {
                         .foregroundColor(.gray)
                 }
             }
+            .sheet(item: $createdGroup, onDismiss: {
+                // After the share sheet is closed, finish up.
+                if let g = createdGroup { onCreated(g) }
+                dismiss()
+            }) { group in
+                ShareInviteView(group: group) {
+                    createdGroup = nil
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -131,7 +140,6 @@ struct CreateGroupView: View {
                     timezone: TimeZone.current.identifier
                 )
 
-                // Upload cover photo if selected — non-fatal if it fails
                 if let coverImage,
                    let imageData = coverImage.jpegData(compressionQuality: 0.8) {
                     do {
@@ -145,21 +153,21 @@ struct CreateGroupView: View {
                         group = try await APIClient.shared.updateGroupCover(groupId: group.id, coverUrl: coverUrl)
                     } catch {
                         print("Cover upload failed (non-fatal):", error)
-                        // Group still created, just without cover
                     }
                 }
 
-                onCreated(group)
-                dismiss()
+                isLoading = false
+                createdGroup = group   // shows the share sheet
             } catch APIError.badRequest(let msg) {
                 errorMessage = msg
+                isLoading = false
             } catch {
                 errorMessage = "Something went wrong"
+                isLoading = false
             }
-            isLoading = false
         }
     }
-    
+
     private func unlockModeRow(_ mode: Group.UnlockMode) -> some View {
         Button {
             unlockMode = mode
@@ -186,6 +194,111 @@ struct CreateGroupView: View {
     }
 }
 
+// MARK: - Share invite sheet (shown right after group creation)
+
+struct ShareInviteView: View {
+    let group: Group
+    var onDone: () -> Void
+    @State private var copied = false
+    @State private var codeCopied = false
+
+    private var inviteLink: String { InviteCode.link(for: group.inviteCode) }
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                VStack(spacing: 8) {
+                    Text("'\(group.name)' is live!")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    Text("invite your friends to join the group by sharing the join link below:")
+                        .font(.title3)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Link display
+                Text(inviteLink)
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 32)
+
+                // Copy + Share
+                HStack(spacing: 12) {
+                    Button {
+                        UIPasteboard.general.string = inviteLink
+                        withAnimation { copied = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation { copied = false }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "copied!" : "copy")
+                        }
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(14)
+                    }
+
+                    ShareLink(item: URL(string: inviteLink)!,
+                              message: Text("join my group on last night")) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("share")
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.white)
+                        .cornerRadius(14)
+                    }
+                }
+                .padding(.horizontal, 32)
+
+                // Tappable code fallback
+                Button {
+                    UIPasteboard.general.string = group.inviteCode
+                    withAnimation { codeCopied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation { codeCopied = false }
+                    }
+                } label: {
+                    Text(codeCopied ? "copied!" : "or share code: \(group.inviteCode)")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                Button {
+                    onDone()
+                } label: {
+                    Text("done")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
 
 extension Group.UnlockMode {
     var label: String {

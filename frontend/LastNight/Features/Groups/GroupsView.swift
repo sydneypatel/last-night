@@ -141,9 +141,13 @@ struct GroupsView: View {
     }
 
     private func joinGroup() {
+        guard let code = InviteCode.parse(inviteCode) else {
+            joinError = "enter a valid invite code or link"
+            return
+        }
         Task {
             do {
-                let group = try await APIClient.shared.joinGroup(inviteCode: inviteCode)
+                let group = try await APIClient.shared.joinGroup(inviteCode: code)
                 groups.insert(group, at: 0)
                 inviteCode = ""
             } catch APIError.serverError(let msg) {
