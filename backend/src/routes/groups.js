@@ -124,6 +124,25 @@ router.post('/', auth, async (req, res, next) => {
   }
 });
 
+router.get('/by-code/:code', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    const { rows: groupRows } = await pool.query(
+      'SELECT * FROM groups WHERE invite_code = $1 AND is_active = TRUE',
+      [req.params.code.toUpperCase()]
+    );
+    if (groupRows.length === 0) return res.status(404).json({ error: 'Invalid invite code' });
+    const group = groupRows[0];
+    const { rows: memberRows } = await pool.query(
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [group.id, req.user.id]
+    );
+    const isMember = memberRows.length > 0;
+    if (isMember) group.role = memberRows[0].role;
+    res.json({ group, isMember });
+  } catch (err) { next(err); }
+});
+
 router.get('/:id', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
   try {
