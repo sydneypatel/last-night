@@ -64,11 +64,13 @@ struct GroupsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    // help button start
                     Button {
                         showingHelp = true
                     } label: {
                         Image(systemName: "questionmark")
                     }
+                    // help button end
                     Button {
                         showingJoinGroup = true
                     } label: {

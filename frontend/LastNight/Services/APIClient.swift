@@ -178,6 +178,12 @@ class APIClient {
         return (response.group, response.members)
     }
     
+    func getGroupByCode(_ code: String) async throws -> (group: Group, isMember: Bool) {
+        struct ByCodeResponse: Decodable { let group: Group; let isMember: Bool }
+        let response: ByCodeResponse = try await request(path: "/groups/by-code/\(code)")
+        return (response.group, response.isMember)
+    }
+    
     func updateUnlockTime(groupId: String, unlockMode: String, unlockAt: Date?) async throws -> Group {
             var body: [String: Any] = ["unlockMode": unlockMode]
             if let unlockAt {

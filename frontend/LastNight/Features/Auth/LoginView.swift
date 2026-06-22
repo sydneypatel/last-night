@@ -21,7 +21,7 @@ struct LoginView: View {
                 Spacer()
 
                 VStack(spacing: 8) {
-                    Text("last night")
+                    Text("last night.")
                         .font(.system(size: 42, weight: .bold))
                         .foregroundColor(.white)
                     Text("capture the night, relive it tomorrow")
