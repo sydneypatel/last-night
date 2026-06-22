@@ -236,7 +236,6 @@ router.patch('/:id/cover', auth, async (req, res, next) => {
       [req.params.id, req.user.id]
     );
     if (memberRows.length === 0) return res.status(403).json({ error: 'Not a member' });
-    if (memberRows[0].role !== 'owner') return res.status(403).json({ error: 'Only owners can set cover photo' });
 
     const { rows } = await pool.query(
       'UPDATE groups SET cover_photo_url = $1 WHERE id = $2 RETURNING *',
@@ -256,7 +255,6 @@ router.patch('/:id/name', auth, async (req, res, next) => {
       [req.params.id, req.user.id]
     );
     if (rows.length === 0) return res.status(403).json({ error: 'Not a member' });
-    if (rows[0].role !== 'owner') return res.status(403).json({ error: 'Only owners can rename the group' });
     const { rows: updated } = await pool.query(
       'UPDATE groups SET name = $1 WHERE id = $2 RETURNING *',
       [name.trim(), req.params.id]
