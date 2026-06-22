@@ -6,6 +6,7 @@ struct PublicProfileView: View {
     let avatarUrl: String?
     @State private var slots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var isLoading = true
+    @State private var showingAvatarFullScreen = false
 
     init(username: String, displayName: String, avatarUrl: String? = nil) {
         self.username = username
@@ -21,28 +22,33 @@ struct PublicProfileView: View {
                 VStack(spacing: 0) {
                     // Header
                     VStack(spacing: 10) {
-                        if let avatarUrl, let url = URL(string: avatarUrl) {
-                            AsyncImage(url: url) { image in
-                                image.resizable().scaledToFill()
-                            } placeholder: {
-                                Circle().fill(Color.white.opacity(0.1))
+                        SwiftUI.Group {
+                            if let avatarUrl, let url = URL(string: avatarUrl) {
+                                AsyncImage(url: url) { image in
+                                    image.resizable().scaledToFill()
+                                } placeholder: {
+                                    Circle().fill(Color.white.opacity(0.1))
+                                        .overlay(
+                                            Text(displayName.prefix(1))
+                                                .font(.title2)
+                                                .foregroundColor(.white)
+                                        )
+                                }
+                                .frame(width: 72, height: 72)
+                                .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.white.opacity(0.1))
+                                    .frame(width: 72, height: 72)
                                     .overlay(
                                         Text(displayName.prefix(1))
                                             .font(.title2)
                                             .foregroundColor(.white)
                                     )
                             }
-                            .frame(width: 72, height: 72)
-                            .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(Color.white.opacity(0.1))
-                                .frame(width: 72, height: 72)
-                                .overlay(
-                                    Text(displayName.prefix(1))
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                )
+                        }
+                        .onTapGesture {
+                            showingAvatarFullScreen = true
                         }
 
                         VStack(spacing: 4) {
@@ -78,6 +84,12 @@ struct PublicProfileView: View {
         .navigationTitle(username)
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadGrid() }
+        .fullScreenCover(isPresented: $showingAvatarFullScreen) {
+            AvatarFullScreenView(
+                avatarUrl: avatarUrl,
+                fallbackInitial: String(displayName.prefix(1))
+            )
+        }
         .preferredColorScheme(.dark)
     }
 

@@ -9,6 +9,7 @@ struct UserProfileView: View {
     @State private var isFollowing = false
     @State private var isFollowLoading = false
     @State private var showingFollowList: FollowListMode?
+    @State private var showingAvatarFullScreen = false
 
     private var isOwnProfile: Bool {
         username.lowercased() == appState.currentUser?.username.lowercased()
@@ -24,23 +25,28 @@ struct UserProfileView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         VStack(spacing: 10) {
-                            if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
-                                AsyncImage(url: url) { image in
-                                    image.resizable().scaledToFill()
-                                } placeholder: {
-                                    Circle().fill(Color.white.opacity(0.1))
-                                }
-                                .frame(width: 80, height: 80)
-                                .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.1))
+                            SwiftUI.Group {
+                                if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable().scaledToFill()
+                                    } placeholder: {
+                                        Circle().fill(Color.white.opacity(0.1))
+                                    }
                                     .frame(width: 80, height: 80)
-                                    .overlay(
-                                        Text(user.displayName.prefix(1))
-                                            .font(.title)
-                                            .foregroundColor(.white)
-                                    )
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.1))
+                                        .frame(width: 80, height: 80)
+                                        .overlay(
+                                            Text(user.displayName.prefix(1))
+                                                .font(.title)
+                                                .foregroundColor(.white)
+                                        )
+                                }
+                            }
+                            .onTapGesture {
+                                showingAvatarFullScreen = true
                             }
 
                             VStack(spacing: 4) {
@@ -130,6 +136,12 @@ struct UserProfileView: View {
         .navigationTitle("@\(username)")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadProfile() }
+        .fullScreenCover(isPresented: $showingAvatarFullScreen) {
+            AvatarFullScreenView(
+                avatarUrl: user?.avatarUrl,
+                fallbackInitial: String(user?.displayName.prefix(1) ?? "?")
+            )
+        }
         .sheet(item: $showingFollowList) { mode in
             if let user {
                 FollowListView(userId: user.id, username: user.username, mode: mode)

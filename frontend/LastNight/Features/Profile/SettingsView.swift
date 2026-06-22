@@ -5,13 +5,12 @@ struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingChangeName = false
     @State private var showingChangeBio = false
-    @State private var showingDeleteAccount = false
-    @State private var showingPrivacyPolicy = false
     @State private var newDisplayName = ""
     @State private var newBio = ""
     @State private var errorMessage: String?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isUploadingAvatar = false
+    @State private var cropImage: UIImage?
 
     var body: some View {
         ZStack {
@@ -110,12 +109,13 @@ struct SettingsView: View {
                         .cornerRadius(12)
                     }
 
-                    Button {
-                        showingPrivacyPolicy = true
+                    NavigationLink {
+                        AdvancedSettingsView()
+                            .environmentObject(appState)
                     } label: {
                         HStack {
-                            Image(systemName: "hand.raised")
-                            Text("privacy policy")
+                            Image(systemName: "ellipsis.circle")
+                            Text("more")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.caption)
@@ -126,22 +126,25 @@ struct SettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
-
-                    Button {
-                        appState.signOut()
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.right.square")
-                            Text("sign out")
-                            Spacer()
-                        }
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.white.opacity(0.07))
-                        .cornerRadius(12)
-                    }
                 }
                 .padding(.horizontal, 24)
+
+                // Sign out, separated from edit actions to avoid mis-taps.
+                Button {
+                    appState.signOut()
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.right.square")
+                        Text("sign out")
+                        Spacer()
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.white.opacity(0.07))
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
 
                 Spacer()
 
@@ -151,29 +154,30 @@ struct SettingsView: View {
                         .font(.caption)
                         .padding(.bottom, 8)
                 }
-
-                Button {
-                    showingDeleteAccount = true
-                } label: {
-                    HStack {
-                        Image(systemName: "trash")
-                        Text("delete account")
-                        Spacer()
-                    }
-                    .foregroundColor(.red)
-                    .padding()
-                    .background(Color.red.opacity(0.08))
-                    .cornerRadius(12)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
             }
         }
         .navigationTitle("settings")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: selectedPhoto) { _, newItem in
             guard let newItem else { return }
-            uploadAvatar(item: newItem)
+            loadImageForCrop(item: newItem)
+        }
+        .fullScreenCover(item: Binding(
+            get: { cropImage.map { CroppableImage(image: $0) } },
+            set: { if $0 == nil { cropImage = nil } }
+        )) { croppable in
+            AvatarCropView(
+                image: croppable.image,
+                onCancel: {
+                    cropImage = nil
+                    selectedPhoto = nil
+                },
+                onCrop: { cropped in
+                    cropImage = nil
+                    selectedPhoto = nil
+                    uploadAvatar(image: cropped)
+                }
+            )
         }
         .alert("change display name", isPresented: $showingChangeName) {
             TextField("display name", text: $newDisplayName)
@@ -182,15 +186,6 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingChangeBio) {
             EditBioSheet(bio: $newBio, onSave: { updateBio() })
-        }
-        .sheet(isPresented: $showingPrivacyPolicy) {
-            LegalSheetView()
-        }
-        .alert("delete account", isPresented: $showingDeleteAccount) {
-            Button("delete", role: .destructive) { deleteAccount() }
-            Button("cancel", role: .cancel) {}
-        } message: {
-            Text("this will permanently delete your account and all your data. this cannot be undone.")
         }
         .preferredColorScheme(.dark)
     }
@@ -206,13 +201,22 @@ struct SettingsView: View {
             )
     }
 
-    private func uploadAvatar(item: PhotosPickerItem) {
+    private func loadImageForCrop(item: PhotosPickerItem) {
+        Task {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                await MainActor.run {
+                    cropImage = image
+                }
+            }
+        }
+    }
+
+    private func uploadAvatar(image: UIImage) {
         isUploadingAvatar = true
         Task {
             do {
-                guard let data = try await item.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data),
-                      let jpegData = image.jpegData(compressionQuality: 0.8) else {
+                guard let jpegData = image.jpegData(compressionQuality: 0.8) else {
                     isUploadingAvatar = false
                     return
                 }
@@ -268,6 +272,85 @@ struct SettingsView: View {
                 errorMessage = "couldn't update bio, try again"
             }
         }
+    }
+}
+
+// Wrapper so a UIImage can drive .fullScreenCover(item:)
+private struct CroppableImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
+struct AdvancedSettingsView: View {
+    @EnvironmentObject var appState: AppState
+    @State private var showingDeleteAccount = false
+    @State private var showingPrivacyPolicy = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    Button {
+                        showingPrivacyPolicy = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                            Text("privacy policy")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+
+                Spacer()
+
+                if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.bottom, 8)
+                }
+
+                Button {
+                    showingDeleteAccount = true
+                } label: {
+                    HStack {
+                        Image(systemName: "trash")
+                        Text("delete account")
+                        Spacer()
+                    }
+                    .foregroundColor(.red)
+                    .padding()
+                    .background(Color.red.opacity(0.08))
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
+            }
+        }
+        .navigationTitle("more")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            LegalSheetView()
+        }
+        .alert("delete account", isPresented: $showingDeleteAccount) {
+            Button("delete", role: .destructive) { deleteAccount() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("this will permanently delete your account and all your data. this cannot be undone.")
+        }
+        .preferredColorScheme(.dark)
     }
 
     private func deleteAccount() {

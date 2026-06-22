@@ -9,8 +9,8 @@ struct ProfileView: View {
     @State private var followingCount = 0
     @State private var showingFollowList: FollowListMode?
     @State private var showingEditFeatured = false
-    @State private var selectedSlot: LNFeaturedSlot?
-    @State private var showingPhotoPicker = false
+    @State private var pickerSlot: LNFeaturedSlot?
+    @State private var showingAvatarFullScreen = false
 
     var body: some View {
         NavigationStack {
@@ -20,24 +20,29 @@ struct ProfileView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         VStack(spacing: 10) {
-                            if let avatarUrl = appState.currentUser?.avatarUrl,
-                               let url = URL(string: avatarUrl) {
-                                AsyncImage(url: url) { image in
-                                    image.resizable().scaledToFill()
-                                } placeholder: {
-                                    Circle().fill(Color.white.opacity(0.1))
-                                }
-                                .frame(width: 80, height: 80)
-                                .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.1))
+                            SwiftUI.Group {
+                                if let avatarUrl = appState.currentUser?.avatarUrl,
+                                   let url = URL(string: avatarUrl) {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable().scaledToFill()
+                                    } placeholder: {
+                                        Circle().fill(Color.white.opacity(0.1))
+                                    }
                                     .frame(width: 80, height: 80)
-                                    .overlay(
-                                        Text(appState.currentUser?.displayName.prefix(1) ?? "?")
-                                            .font(.title)
-                                            .foregroundColor(.white)
-                                    )
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.1))
+                                        .frame(width: 80, height: 80)
+                                        .overlay(
+                                            Text(appState.currentUser?.displayName.prefix(1) ?? "?")
+                                                .font(.title)
+                                                .foregroundColor(.white)
+                                        )
+                                }
+                            }
+                            .onTapGesture {
+                                showingAvatarFullScreen = true
                             }
 
                             VStack(spacing: 4) {
@@ -106,8 +111,7 @@ struct ProfileView: View {
                         } else {
                             FeaturedGridView(slots: featuredSlots, isOwner: true) { slot in
                                 if slot.photo == nil {
-                                    selectedSlot = slot
-                                    showingPhotoPicker = true
+                                    pickerSlot = slot
                                 } else {
                                     showingEditFeatured = true
                                 }
@@ -128,26 +132,30 @@ struct ProfileView: View {
             }
             .task { await loadFeatured() }
             .onAppear { Task { await loadFeatured() } }
+            .fullScreenCover(isPresented: $showingAvatarFullScreen) {
+                AvatarFullScreenView(
+                    avatarUrl: appState.currentUser?.avatarUrl,
+                    fallbackInitial: String(appState.currentUser?.displayName.prefix(1) ?? "?")
+                )
+            }
             .sheet(isPresented: $showingEditFeatured, onDismiss: {
                 Task { await loadFeatured() }
             }) {
                 EditFeaturedView().environmentObject(appState)
             }
-            .sheet(isPresented: $showingPhotoPicker, onDismiss: {
+            .sheet(item: $pickerSlot, onDismiss: {
                 Task { await loadFeatured() }
-            }) {
-                if let slot = selectedSlot {
-                    PhotoPickerView(
-                        slot: slot,
-                        photos: myPhotos,
-                        onSelect: { photoId in
-                            Task { await setFeatured(position: slot.position, photoId: photoId) }
-                        },
-                        onClear: {
-                            Task { await setFeatured(position: slot.position, photoId: nil) }
-                        }
-                    )
-                }
+            }) { slot in
+                PhotoPickerView(
+                    slot: slot,
+                    photos: myPhotos,
+                    onSelect: { photoId in
+                        Task { await setFeatured(position: slot.position, photoId: photoId) }
+                    },
+                    onClear: {
+                        Task { await setFeatured(position: slot.position, photoId: nil) }
+                    }
+                )
             }
             .sheet(item: $showingFollowList) { mode in
                 if let userId = appState.currentUser?.id, let username = appState.currentUser?.username {
@@ -199,6 +207,6 @@ struct ProfileView: View {
         } catch {
             print("Error setting featured:", error)
         }
-        showingPhotoPicker = false
+        pickerSlot = nil
     }
 }

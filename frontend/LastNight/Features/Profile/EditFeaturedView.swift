@@ -5,9 +5,8 @@ struct EditFeaturedView: View {
     @EnvironmentObject var appState: AppState
     @State private var slots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var myPhotos: [Photo] = []
-    @State private var selectedSlot: LNFeaturedSlot?
+    @State private var pickerSlot: LNFeaturedSlot?
     @State private var isLoading = true
-    @State private var showingPhotoPicker = false
 
     var body: some View {
         NavigationStack {
@@ -25,8 +24,7 @@ struct EditFeaturedView: View {
                             ProgressView().tint(.white).padding(.top, 40)
                         } else {
                             FeaturedGridView(slots: slots, isOwner: true) { slot in
-                                selectedSlot = slot
-                                showingPhotoPicker = true
+                                pickerSlot = slot
                             }
                             .padding(.horizontal, 1)
                         }
@@ -42,19 +40,17 @@ struct EditFeaturedView: View {
                 }
             }
             .task { await loadData() }
-            .sheet(isPresented: $showingPhotoPicker) {
-                if let slot = selectedSlot {
-                    PhotoPickerView(
-                        slot: slot,
-                        photos: myPhotos,
-                        onSelect: { photoId in
-                            Task { await setFeatured(position: slot.position, photoId: photoId) }
-                        },
-                        onClear: {
-                            Task { await setFeatured(position: slot.position, photoId: nil) }
-                        }
-                    )
-                }
+            .sheet(item: $pickerSlot) { slot in
+                PhotoPickerView(
+                    slot: slot,
+                    photos: myPhotos,
+                    onSelect: { photoId in
+                        Task { await setFeatured(position: slot.position, photoId: photoId) }
+                    },
+                    onClear: {
+                        Task { await setFeatured(position: slot.position, photoId: nil) }
+                    }
+                )
             }
         }
         .preferredColorScheme(.dark)
@@ -100,7 +96,7 @@ struct EditFeaturedView: View {
         } catch {
             print("Error setting featured:", error)
         }
-        showingPhotoPicker = false
+        pickerSlot = nil
     }
 }
 
@@ -143,7 +139,7 @@ struct PhotoPickerView: View {
                         }
 
                         if photos.isEmpty {
-                            Text("no unlocked photos yet")
+                            Text("no saved photos yet")
                                 .foregroundColor(.gray)
                                 .padding(.top, 60)
                         } else {
