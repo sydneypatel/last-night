@@ -278,6 +278,14 @@ class APIClient {
     func deletePhoto(photoId: String) async throws {
         let _: EmptyResponse = try await request(path: "/photos/\(photoId)", method: "DELETE")
     }
+    
+    func reportPhoto(photoId: String, reason: String) async throws {
+        let _: EmptyResponse = try await request(
+            path: "/reports/photo/\(photoId)",
+            method: "POST",
+            body: ["reason": reason]
+        )
+    }
 
     // MARK: - Library
 
@@ -310,6 +318,40 @@ class APIClient {
     func getMyPhotosForFeaturing() async throws -> [Photo] {
         let response: PhotosResponse = try await request(path: "/featured/me/library")
         return response.photos
+    }
+    
+    // MARK: - Admin / Reports
+    
+    struct AdminReport: Decodable, Identifiable {
+        let id: String
+        let reason: String
+        let createdAt: String
+        let photoId: String
+        let url: String
+        let photoOwnerUsername: String
+        let reporterUsername: String
+        
+        enum CodingKeys: String, CodingKey {
+            case id, reason, url
+            case createdAt = "created_at"
+            case photoId = "photo_id"
+            case photoOwnerUsername = "photo_owner_username"
+            case reporterUsername = "reporter_username"
+        }
+    }
+    
+    func getPendingReports() async throws -> [AdminReport] {
+        struct Response: Decodable { let reports: [AdminReport] }
+        let response: Response = try await request(path: "/reports/admin/pending")
+        return response.reports
+    }
+    
+    func dismissReport(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/reports/admin/\(id)/dismiss", method: "POST")
+    }
+    
+    func removeReportedPhoto(reportId: String) async throws {
+        let _: EmptyResponse = try await request(path: "/reports/admin/\(reportId)/remove", method: "POST")
     }
 }
 

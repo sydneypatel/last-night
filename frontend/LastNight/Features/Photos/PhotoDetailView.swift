@@ -16,6 +16,8 @@ struct PhotoDetailView: View {
     @State private var showingDeleteConfirm = false
     @State private var isDeleting = false
     @State private var localPhotos: [Photo]
+    @State private var showingReportSheet = false
+    @State private var showingReportConfirm = false
 
     init(photos: [Photo], startIndex: Int, groupName: String, onPhotoDeleted: ((String) -> Void)? = nil) {
         self.photos = photos
@@ -88,7 +90,16 @@ struct PhotoDetailView: View {
                         }
                         .disabled(isDeleting)
                     } else {
-                        Color.clear.frame(width: 44, height: 44)
+                        Button {
+                            showingReportSheet = true
+                        } label: {
+                            Image(systemName: "flag")
+                                .font(.title3)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -127,6 +138,22 @@ struct PhotoDetailView: View {
         .task {
             await checkSavedPhotos()
         }
+        .confirmationDialog("report photo", isPresented: $showingReportSheet, titleVisibility: .visible) {
+            Button("nudity / sexual content") { reportPhoto(reason: "nudity / sexual content") }
+            Button("violence / graphic content") { reportPhoto(reason: "violence / graphic content") }
+            Button("harassment / bullying") { reportPhoto(reason: "harassment / bullying") }
+            Button("hate speech") { reportPhoto(reason: "hate speech") }
+            Button("dangerous or illegal activity") { reportPhoto(reason: "dangerous or illegal activity") }
+            Button("other") { reportPhoto(reason: "other") }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("why are you reporting this photo?")
+        }
+        .alert("photo reported", isPresented: $showingReportConfirm) {
+            Button("ok", role: .cancel) {}
+        } message: {
+            Text("thanks for helping keep last night safe. our team will review this photo.")
+        }
     }
 
     private func deletePhoto() {
@@ -154,6 +181,20 @@ struct PhotoDetailView: View {
             } catch {
                 print("Delete photo error:", error)
                 await MainActor.run { isDeleting = false }
+            }
+        }
+    }
+    
+    private func reportPhoto(reason: String) {
+        let photo = currentPhoto
+        Task {
+            do {
+                try await APIClient.shared.reportPhoto(photoId: photo.id, reason: reason)
+                await MainActor.run {
+                    showingReportConfirm = true
+                }
+            } catch {
+                print("Report error:", error)
             }
         }
     }
