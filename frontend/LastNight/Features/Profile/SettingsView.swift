@@ -1,5 +1,7 @@
 import SwiftUI
 import PhotosUI
+import FirebaseMessaging
+import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
@@ -126,7 +128,6 @@ struct SettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
-                    NotificationToggleRow()
                 }
                 .padding(.horizontal, 24)
 
@@ -301,7 +302,7 @@ struct NotificationToggleRow: View {
                     set: { _ in handleTap() }
                 ))
                 .labelsHidden()
-                .tint(.white)
+                .tint(.green)
             }
             .foregroundColor(.white)
             .padding()
@@ -324,30 +325,38 @@ struct NotificationToggleRow: View {
     private func handleTap() {
         Task {
             await refreshAuthStatus()
-
+            
             // If iOS permission is denied, we can't enable in-app — send to Settings.
             if !systemAuthorized {
                 showSettingsAlert = true
                 return
             }
-
+            
+            // Resolve the current FCM token once.
+            let token = await currentFCMToken()
+            
             if notificationsEnabled {
                 // Turn OFF — remove this device's token
                 notificationsEnabled = false
-                if let token = AppState.latestFCMToken ?? (try? await Messaging.messaging().token()) {
+                if let token {
                     try? await APIClient.shared.unregisterDeviceToken(token)
                 }
             } else {
                 // Turn ON — re-register the token
                 notificationsEnabled = true
-                if let token = AppState.latestFCMToken ?? (try? await Messaging.messaging().token()) {
+                if let token {
                     AppState.latestFCMToken = token
                     try? await APIClient.shared.registerDeviceToken(token, environment: "fcm")
                 }
             }
         }
     }
-
+    
+    private func currentFCMToken() async -> String? {
+        if let token = AppState.latestFCMToken { return token }
+        return try? await Messaging.messaging().token()
+    }
+    
     private func refreshAuthStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         systemAuthorized = settings.authorizationStatus == .authorized
@@ -401,6 +410,7 @@ struct AdvancedSettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
+                    NotificationToggleRow()
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
