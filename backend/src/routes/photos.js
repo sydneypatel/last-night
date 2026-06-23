@@ -130,4 +130,22 @@ router.delete('/:id', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/:id/rotate-url', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    const { rows } = await pool.query('SELECT * FROM photos WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Photo not found' });
+    const photo = rows[0];
+    if (photo.user_id !== req.user.id) return res.status(403).json({ error: 'Not your photo' });
+    if (photo.locked) return res.status(403).json({ error: 'Photo is locked' });
+
+    const uploadUrl = await getSignedUrl(
+      s3,
+      new PutObjectCommand({ Bucket: BUCKET, Key: photo.s3_key, ContentType: 'image/jpeg' }),
+      { expiresIn: 300 }
+    );
+    res.json({ uploadUrl, s3Key: photo.s3_key });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -37,14 +37,7 @@ class CameraViewModel: NSObject, ObservableObject {
         session.commitConfiguration()
 
         Task.detached { [weak self] in
-            guard let self else { return }
-            self.session.startRunning()
-            await MainActor.run {
-                if let connection = self.photoOutput.connection(with: .video),
-                   connection.isVideoRotationAngleSupported(90) {
-                    connection.videoRotationAngle = 90
-                }
-            }
+            self?.session.startRunning()
         }
     }
 
@@ -73,8 +66,23 @@ class CameraViewModel: NSObject, ObservableObject {
 
     func capturePhoto() {
         isCapturing = true
+        if let connection = photoOutput.connection(with: .video) {
+            let angle = captureRotationAngle()
+            if connection.isVideoRotationAngleSupported(angle) {
+                connection.videoRotationAngle = angle
+            }
+        }
         let settings = AVCapturePhotoSettings()
         photoOutput.capturePhoto(with: settings, delegate: self)
+    }
+    
+    private func captureRotationAngle() -> CGFloat {
+        switch UIDevice.current.orientation {
+        case .landscapeLeft:  return 0
+        case .landscapeRight: return 180
+        case .portraitUpsideDown: return 270
+        default: return 90  // portrait (and face up/down/unknown fall back to portrait)
+        }
     }
 
     func stopSession() {
