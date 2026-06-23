@@ -410,6 +410,26 @@ struct AdvancedSettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
+                    
+                    if Admin.isAdmin(appState.currentUser?.id) {
+                        NavigationLink {
+                            AdminView()
+                        } label: {
+                            HStack {
+                                Image(systemName: "shield.fill")
+                                Text("admin")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(12)
+                        }
+                    }
+                    
                     NotificationToggleRow()
                 }
                 .padding(.horizontal, 24)
@@ -448,9 +468,11 @@ struct AdvancedSettingsView: View {
                 showingHowItWorks = false
             }
         }
+        
         .sheet(isPresented: $showingPrivacyPolicy) {
             LegalSheetView(initialPage: .terms)
         }
+        
         .alert("delete account", isPresented: $showingDeleteAccount) {
             Button("delete", role: .destructive) { deleteAccount() }
             Button("cancel", role: .cancel) {}
