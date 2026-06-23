@@ -1,5 +1,9 @@
 # Changelog
 
+...
+
+**build 5**
+
 ## June 19, 2026
 - group edit permissions — anyone can edit group name and photo
 - owners can only delete groups, members can only leave groups
@@ -8,6 +12,11 @@
 - delete only photos from groups that you took
 - followers/following lists
 - search feature
+- push notifications
+  - group unlocked
+  - someone joins group
+
+**build 6**
 
 ## June 21, 2026
 - click to view profile picture
@@ -16,11 +25,9 @@
 - tap to enlarge profile pics
 - deployment target lowered to iOS 17.6
 - settings rearranged
-- push notifications
-  - group unlocked
-  - someone joins group
 
 ## June 22, 2026
+- notifications fixed (hopefully)
 - onboarding screens (6-card carousel)
 - help button (groups screen + settings)
 - deep links / invite links
@@ -38,3 +45,5 @@
 - added "add members" to groups: search any user and add them directly, they get a notification and tapping it opens the group
 - added an "add friends" button to the post-create share screen for adding people right after making a group
 - fixed notification taps not opening the group when the app was on another tab (affected unlock, member-joined, and add-member notifications)
+
+**build 7**
