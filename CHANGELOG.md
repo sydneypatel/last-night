@@ -2,9 +2,7 @@
 
 ...
 
-**build 5**
-
-## June 19, 2026
+##  build 5
 - group edit permissions — anyone can edit group name and photo
 - owners can only delete groups, members can only leave groups
 - owners can change unlock times
@@ -16,9 +14,7 @@
   - group unlocked
   - someone joins group
 
-**build 6**
-
-## June 21, 2026
+## build 6
 - click to view profile picture
 - sign in with apple (SIWA)
 - library-only photos for the 9 featured photos
@@ -26,7 +22,6 @@
 - deployment target lowered to iOS 17.6
 - settings rearranged
 
-## June 22, 2026
 - notifications fixed (hopefully)
 - onboarding screens (6-card carousel)
 - help button (groups screen + settings)
@@ -46,4 +41,5 @@
 - added an "add friends" button to the post-create share screen for adding people right after making a group
 - fixed notification taps not opening the group when the app was on another tab (affected unlock, member-joined, and add-member notifications)
 
-**build 7**
+## build 7
+- ...
