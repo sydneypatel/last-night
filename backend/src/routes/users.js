@@ -35,6 +35,11 @@ router.get('/search', auth, async (req, res, next) => {
               EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = u.id) AS is_following
        FROM users u
        WHERE (LOWER(u.username) LIKE $1 OR LOWER(u.display_name) LIKE $1) AND u.id != $2
+         AND u.id NOT IN (
+           SELECT blocked_id FROM blocks WHERE blocker_id = $2
+           UNION
+           SELECT blocker_id FROM blocks WHERE blocked_id = $2
+         )
        ORDER BY
          CASE WHEN LOWER(u.username) LIKE $1 THEN 0 ELSE 1 END,
          u.username

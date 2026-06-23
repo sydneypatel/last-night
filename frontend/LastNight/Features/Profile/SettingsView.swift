@@ -416,7 +416,7 @@ struct AdvancedSettingsView: View {
                             AdminView()
                         } label: {
                             HStack {
-                                Image(systemName: "shield.fill")
+                                Image(systemName: "person.badge.key.fill")
                                 Text("admin")
                                 Spacer()
                                 Image(systemName: "chevron.right")

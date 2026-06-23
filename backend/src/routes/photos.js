@@ -69,8 +69,13 @@ router.get('/group/:groupId', auth, async (req, res, next) => {
        FROM photos p
        JOIN users u ON u.id = p.user_id
        WHERE p.group_id = $1
+         AND p.user_id NOT IN (
+           SELECT blocked_id FROM blocks WHERE blocker_id = $2
+           UNION
+           SELECT blocker_id FROM blocks WHERE blocked_id = $2
+         )
        ORDER BY p.captured_at DESC`,
-      [req.params.groupId]
+      [req.params.groupId, req.user.id]
     );
     const photosWithUrls = await Promise.all(
       photos.map(async (photo) => {

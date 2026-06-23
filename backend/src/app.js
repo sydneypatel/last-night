@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const featuredRoutes = require('./routes/featured');
 const notificationRoutes = require('./routes/notifications');
 const reportRoutes = require('./routes/reports');
+const blockRoutes = require('./routes/blocks');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -28,6 +29,7 @@ app.use('/users', userRoutes);
 app.use('/featured', featuredRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/reports', reportRoutes);
+app.use('/blocks', blockRoutes);
 
 app.use(errorHandler);
 

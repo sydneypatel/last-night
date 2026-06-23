@@ -58,4 +58,4 @@
 - push notifications now working when user follows another user, clicking on it brings you to their profile
 
 ## build 7
-- 
+- reporting feature complete: users can successfully make a report, and the admin can review the report and choose to remove or dismiss. removing will delete the photo from the database, subsequently removing the photo from any group, library, and featured grid. 
