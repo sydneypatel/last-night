@@ -1,20 +1,36 @@
 # Changelog
 
-...
+## build 1-3 (mar 30-apr 2)
+- inital screens built (groups, camera, library, profile - basic)
+- group code is copy-able
+- users can feature 9 photos on their profile
+- lambda/eventbridge done
+- camera buttons simplified 
+- cover photo and photo grid for groups done
+- notification attempt via APNs
 
-##  build 5
+
+## build 4 (jun 18-19)
+- google sign in button fixed
+- search feature
+- followers/following lists
+- delete only photos from groups that you took
+- remove any photos from library
+- fixed camera and orientation issues
+- users can update their bio
+- unlock icon and "unlocked on ___" when a group is unlocked
+- date and time added to each group 
+
+## build 5 (jun 21)
 - group edit permissions — anyone can edit group name and photo
 - owners can only delete groups, members can only leave groups
 - owners can change unlock times
-- remove any photos from library
-- delete only photos from groups that you took
-- followers/following lists
-- search feature
-- push notifications
+- push notifications -> FCM
   - group unlocked
   - someone joins group
+- privacy policy added
 
-## build 6
+## build 6 (jun 22-#)
 - click to view profile picture
 - sign in with apple (SIWA)
 - library-only photos for the 9 featured photos
