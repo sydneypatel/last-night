@@ -10,7 +10,7 @@
 
 ---
 
-## 🌅 Overview
+## 🌅 overview
 
 **Last Night** is a social photo app built around a simple idea: when you're out with friends, you capture the night — but nobody sees the photos until they unlock the next morning. No real-time feed, no chasing the perfect shot, no checking your phone. Just everyone capturing their own view of the night, revealed together at sunrise.
 
@@ -18,7 +18,7 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 
 ---
 
-## ✨ Features
+## ✨ features
 
 | Feature | Description |
 |---------|-------------|
@@ -33,7 +33,7 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 
 ---
 
-## 🧠 Tech Stack
+## 🧠 tech stack
 
 ### 📱 Frontend
 - **SwiftUI** — native iOS, built in Xcode
@@ -41,12 +41,12 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 - **AVFoundation** — custom camera capture
 - **Universal Links** — deep-link invites that open the app
 
-### ⚙️ Backend
+### ⚙️ backend
 - **Node.js + Express** — REST API on **AWS EC2** (managed with `pm2`)
 - **PostgreSQL** — hosted on **AWS RDS**
 - **Firebase Cloud Messaging** — push notifications
 
-### ☁️ Infrastructure
+### ☁️ infrastructure
 - **Amazon S3 Bucket** — photo storage with presigned upload URLs
 - **CloudFront** — CDN for fast photo delivery
 - **AWS Lambda** — scheduled "sunrise unlock" job that flips photos and fires notifications
@@ -55,7 +55,7 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ architecture
 
 ```
                           ┌─────────────────-┐
@@ -91,13 +91,13 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 
 ---
 
-## 🎨 Design
+## 🎨 design
 
 Minimal, monochrome, and built for nighttime — a black canvas, clean type, and nothing that gets in the way of the moment.
 
 ---
 
-## 🤸‍♀️ Made By
+## 🤸‍♀️ made by
 
 Built and created by **Sydney** & **Katie** 🌙
 
