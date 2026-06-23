@@ -345,4 +345,62 @@ router.patch('/:id/unlock', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/:id/add-member', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  try {
+    // The person adding must be a member of the group
+    const { rows: adderRows } = await pool.query(
+      'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (adderRows.length === 0) return res.status(403).json({ error: 'Not a member' });
+
+    // Group must exist and be active
+    const { rows: groupRows } = await pool.query(
+      'SELECT * FROM groups WHERE id = $1 AND is_active = TRUE',
+      [req.params.id]
+    );
+    if (groupRows.length === 0) return res.status(404).json({ error: 'Group not found' });
+    const group = groupRows[0];
+
+    // Target user must exist
+    const { rows: targetRows } = await pool.query('SELECT 1 FROM users WHERE id = $1', [userId]);
+    if (targetRows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    // Already a member?
+    const { rows: existing } = await pool.query(
+      'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, userId]
+    );
+    if (existing.length > 0) return res.status(409).json({ error: 'Already a member' });
+
+    // Add them
+    await pool.query(
+      `INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, 'member')`,
+      [req.params.id, userId]
+    );
+
+    // Notify the added user
+    try {
+      const { rows: tokenRows } = await pool.query(
+        'SELECT token FROM device_tokens WHERE user_id = $1',
+        [userId]
+      );
+      const tokens = tokenRows.map(r => r.token);
+      await sendFCM(
+        tokens,
+        group.name,
+        `${req.user.display_name} added you to their group`,
+        { type: 'added_to_group', groupId: group.id }
+      );
+    } catch (pushErr) {
+      console.error('Add-member push failed (non-fatal):', pushErr);
+    }
+
+    res.status(201).json({ added: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
