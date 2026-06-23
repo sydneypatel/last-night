@@ -54,6 +54,8 @@
 - added "add members" to groups: search any user and add them directly, they get a notification and tapping it opens the group
 - added an "add friends" button to the post-create share screen for adding people right after making a group
 - fixed notification taps not opening the group when the app was on another tab (affected unlock, member-joined, and add-member notifications)
+- fixed push notifications not delivering on TestFlight/production builds (APNs auth key was scoped to Sandbox only; replaced with a Sandbox & Production key)
+- push notifications now working when user follows another user, clicking on it brings you to their profile
 
 ## build 7
-- ...
+- 

@@ -66,26 +66,33 @@ struct SearchView: View {
                     await performSearch(newValue)
                 }
             }
-            .onChange(of: appState.pendingFollowUserId) { _, userId in
-                guard let userId else { return }
-                // Fetch the username for this userId then navigate
-                Task {
-                    do {
-                        let user = try await APIClient.shared.getUser(id: userId)
-                        await MainActor.run {
-                            navigationPath.append(user.username)
-                            appState.pendingFollowUserId = nil
-                        }
-                    } catch {
-                        print("Error fetching follower profile:", error)
-                        appState.pendingFollowUserId = nil
-                    }
-                }
+            .onChange(of: appState.pendingFollowUserId) { _, _ in
+                handlePendingFollow()
             }
+            .task {
+                handlePendingFollow()
+            }
+            
         }
         .preferredColorScheme(.dark)
     }
-
+    
+    private func handlePendingFollow() {
+        guard let userId = appState.pendingFollowUserId else { return }
+        Task {
+            do {
+                let user = try await APIClient.shared.getUser(id: userId)
+                await MainActor.run {
+                    navigationPath.append(user.username)
+                    appState.pendingFollowUserId = nil
+                }
+            } catch {
+                print("Error fetching follower profile:", error)
+                await MainActor.run { appState.pendingFollowUserId = nil }
+            }
+        }
+    }
+    
     private func performSearch(_ q: String) async {
         isSearching = true
         do {

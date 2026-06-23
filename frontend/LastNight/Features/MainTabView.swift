@@ -32,5 +32,12 @@ struct MainTabView: View {
             guard newValue != nil else { return }
             selectedTab = 0
         }
+        .task {
+            if appState.pendingFollowUserId != nil {
+                selectedTab = 2
+            } else if appState.pendingGroupId != nil {
+                selectedTab = 0
+            }
+        }
     }
 }
