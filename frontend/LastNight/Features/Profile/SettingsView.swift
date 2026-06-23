@@ -431,6 +431,23 @@ struct AdvancedSettingsView: View {
                     }
                     
                     NotificationToggleRow()
+                    
+                    NavigationLink {
+                        BlockedUsersView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                            Text("blocked users")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)

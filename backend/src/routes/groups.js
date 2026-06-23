@@ -160,8 +160,13 @@ router.get('/:id', auth, async (req, res, next) => {
       FROM group_members gm
       JOIN users u ON u.id = gm.user_id
       WHERE gm.group_id = $1
+        AND u.id NOT IN (
+          SELECT blocked_id FROM blocks WHERE blocker_id = $2
+          UNION
+          SELECT blocker_id FROM blocks WHERE blocked_id = $2
+        )
       ORDER BY gm.joined_at ASC`,
-      [req.params.id]
+      [req.params.id, req.user.id]
     );
     res.json({ group, members });
   } catch (err) { next(err); }

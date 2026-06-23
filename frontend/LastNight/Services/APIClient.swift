@@ -353,6 +353,21 @@ class APIClient {
     func removeReportedPhoto(reportId: String) async throws {
         let _: EmptyResponse = try await request(path: "/reports/admin/\(reportId)/remove", method: "POST")
     }
+    
+    // MARK: - Blocking
+    
+    func blockUser(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/blocks/\(id)", method: "POST")
+    }
+    
+    func unblockUser(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/blocks/\(id)", method: "DELETE")
+    }
+    
+    func getBlockedUsers() async throws -> [User] {
+        let response: UsersResponse = try await request(path: "/blocks")
+        return response.users
+    }
 }
 
 // MARK: - Response types

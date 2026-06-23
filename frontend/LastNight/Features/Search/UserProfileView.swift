@@ -3,6 +3,7 @@ import SwiftUI
 struct UserProfileView: View {
     let username: String
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) var dismiss
     @State private var user: User?
     @State private var featuredSlots: [LNFeaturedSlot] = (1...9).map { LNFeaturedSlot(position: $0, photo: nil) }
     @State private var isLoading = true
@@ -10,6 +11,7 @@ struct UserProfileView: View {
     @State private var isFollowLoading = false
     @State private var showingFollowList: FollowListMode?
     @State private var showingAvatarFullScreen = false
+    @State private var showingBlockConfirm = false
 
     private var isOwnProfile: Bool {
         username.lowercased() == appState.currentUser?.username.lowercased()
@@ -135,6 +137,22 @@ struct UserProfileView: View {
         }
         .navigationTitle("@\(username)")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !isOwnProfile {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(role: .destructive) {
+                            showingBlockConfirm = true
+                        } label: {
+                            Label("block @\(username)", systemImage: "hand.raised.fill")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
         .task { await loadProfile() }
         .fullScreenCover(isPresented: $showingAvatarFullScreen) {
             AvatarFullScreenView(
@@ -146,6 +164,12 @@ struct UserProfileView: View {
             if let user {
                 FollowListView(userId: user.id, username: user.username, mode: mode)
             }
+        }
+        .alert("block @\(username)?", isPresented: $showingBlockConfirm) {
+            Button("block", role: .destructive) { blockUser() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("they won't be able to see your profile or photos, and you won't see theirs. this also unfollows you both.")
         }
         .preferredColorScheme(.dark)
     }
@@ -181,6 +205,20 @@ struct UserProfileView: View {
                 print("Follow toggle error:", error)
             }
             isFollowLoading = false
+        }
+    }
+
+    private func blockUser() {
+        guard let user else { return }
+        Task {
+            do {
+                try await APIClient.shared.blockUser(id: user.id)
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                print("Block error:", error)
+            }
         }
     }
 }

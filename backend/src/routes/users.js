@@ -62,6 +62,16 @@ router.get('/:username', auth, async (req, res, next) => {
       [req.params.username.toLowerCase(), req.user?.id || null]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    // After getting the user row, before returning:
+    if (req.user) {
+      const { rows: blockCheck } = await pool.query(
+        `SELECT 1 FROM blocks
+         WHERE (blocker_id = $1 AND blocked_id = $2)
+            OR (blocker_id = $2 AND blocked_id = $1)`,
+        [req.user.id, rows[0].id]
+      );
+      if (blockCheck.length > 0) return res.status(404).json({ error: 'User not found' });
+    }
     res.json({ user: rows[0] });
   } catch (err) { next(err); }
 });
@@ -70,7 +80,17 @@ router.post('/:id/follow', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
   const targetId = req.params.id;
   if (targetId === req.user.id) return res.status(400).json({ error: 'Cannot follow yourself' });
+
   try {
+    // Block check — can't follow someone you've blocked or who blocked you
+    const { rows: blockCheck } = await pool.query(
+      `SELECT 1 FROM blocks
+       WHERE (blocker_id = $1 AND blocked_id = $2)
+          OR (blocker_id = $2 AND blocked_id = $1)`,
+      [req.user.id, targetId]
+    );
+    if (blockCheck.length > 0) return res.status(403).json({ error: 'Cannot follow this user' });
+
     const { rows: targetCheck } = await pool.query('SELECT 1 FROM users WHERE id = $1', [targetId]);
     if (targetCheck.length === 0) return res.status(404).json({ error: 'User not found' });
 
@@ -86,18 +106,14 @@ router.post('/:id/follow', auth, async (req, res, next) => {
         [targetId]
       );
       const tokens = tokenRows.map(r => r.token);
-      console.log(`[FOLLOW] target ${targetId} has ${tokens.length} token(s)`);
-      const result = await admin.messaging().sendEachForMulticast({
+      await sendFCM(
         tokens,
-        notification: { title: 'new follower', body: `${req.user.display_name} started following you` },
-        data: { type: 'new_follower', userId: String(req.user.id) },
-      });
-      console.log(`[FOLLOW] FCM sent: ${result.successCount} ok, ${result.failureCount} failed`);
-      result.responses.forEach((r, i) => {
-        if (!r.success) console.log(`[FOLLOW] token ${i} failed:`, r.error?.message);
-      });
+        'new follower',
+        `${req.user.display_name} started following you`,
+        { type: 'new_follower', userId: req.user.id }
+      );
     } catch (pushErr) {
-      console.error('Follow push failed:', pushErr);
+      console.error('Follow push failed (non-fatal):', pushErr);
     }
 
     res.status(201).json({ following: true });
@@ -121,9 +137,13 @@ router.get('/:id/followers', auth, async (req, res, next) => {
       `SELECT u.id, u.username, u.display_name, u.avatar_url
        FROM follows f
        JOIN users u ON u.id = f.follower_id
-       WHERE f.following_id = $1
+       WHERE f.following_id = $1 AND u.id NOT IN (
+           SELECT blocked_id FROM blocks WHERE blocker_id = $2
+           UNION
+           SELECT blocker_id FROM blocks WHERE blocked_id = $2
+         )
        ORDER BY f.created_at DESC`,
-      [req.params.id]
+      [req.params.id, req.user.id]
     );
     res.json({ users: rows });
   } catch (err) { next(err); }
@@ -135,9 +155,13 @@ router.get('/:id/following', auth, async (req, res, next) => {
       `SELECT u.id, u.username, u.display_name, u.avatar_url
        FROM follows f
        JOIN users u ON u.id = f.following_id
-       WHERE f.follower_id = $1
+       WHERE f.follower_id = $1 AND u.id NOT IN (
+           SELECT blocked_id FROM blocks WHERE blocker_id = $2
+           UNION
+           SELECT blocker_id FROM blocks WHERE blocked_id = $2
+         )
        ORDER BY f.created_at DESC`,
-      [req.params.id]
+      [req.params.id, req.user.id]
     );
     res.json({ users: rows });
   } catch (err) { next(err); }
