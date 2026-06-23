@@ -201,6 +201,7 @@ struct ShareInviteView: View {
     var onDone: () -> Void
     @State private var copied = false
     @State private var codeCopied = false
+    @State private var showingAddMembers = false
 
     private var inviteLink: String { InviteCode.link(for: group.inviteCode) }
 
@@ -234,6 +235,7 @@ struct ShareInviteView: View {
                     .background(Color.white.opacity(0.08))
                     .cornerRadius(12)
                     .padding(.horizontal, 32)
+                
 
                 // Copy + Share
                 HStack(spacing: 12) {
@@ -271,7 +273,23 @@ struct ShareInviteView: View {
                     }
                 }
                 .padding(.horizontal, 32)
-
+                
+                Button {
+                    showingAddMembers = true
+                } label: {
+                    HStack {
+                        Image(systemName: "person.badge.plus")
+                        Text("add friends")
+                    }
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(14)
+                }
+                .padding(.horizontal, 32)
+                
                 // Tappable code fallback
                 Button {
                     UIPasteboard.general.string = group.inviteCode
@@ -294,7 +312,12 @@ struct ShareInviteView: View {
                         .foregroundColor(.gray)
                         .padding()
                 }
+                
+                
             }
+        }
+        .sheet(isPresented: $showingAddMembers) {
+            AddMembersView(groupId: group.id, groupName: group.name)
         }
         .preferredColorScheme(.dark)
     }

@@ -29,6 +29,7 @@ struct GroupFeedView: View {
     @State private var isUploadingCover = false
     @State private var showingRenameGroup = false
     @State private var newGroupName = ""
+    @State private var showingAddMembers = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 2),
@@ -196,6 +197,11 @@ struct GroupFeedView: View {
                     Button { showingMembers = true } label: {
                         Label("members", systemImage: "person.2.fill")
                     }
+                    Button {
+                        showingAddMembers = true
+                    } label: {
+                        Label("add members", systemImage: "person.badge.plus")
+                    }
                     Button { showingCoverPhotoSourcePicker = true } label: {
                         Label("change cover photo", systemImage: "photo")
                     }
@@ -294,6 +300,9 @@ struct GroupFeedView: View {
                 }
         .sheet(isPresented: $showingMembers) {
             MembersView(groupId: group.id)
+        }
+        .sheet(isPresented: $showingAddMembers) {
+            AddMembersView(groupId: group.id, groupName: currentGroupName)
         }
         .sheet(isPresented: Binding(
             get: { selectedPhotoIndex != nil },

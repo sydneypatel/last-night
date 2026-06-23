@@ -13,7 +13,7 @@ struct OnboardingView: View {
         OnboardingPage(
             icon: "person.3.fill",
             title: "make a group",
-            subtitle: "create a group with your friends and invite them to join with a unique link"
+            subtitle: "create a group with your friends! then, invite them to join with a link or add them by search"
         ),
         OnboardingPage(
             icon: "camera.fill",

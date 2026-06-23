@@ -17,7 +17,7 @@ struct MainTabView: View {
             SearchView()
                 .tabItem { Label("search", systemImage: "magnifyingglass") }
                 .tag(2)
-
+            
             ProfileView()
                 .tabItem { Label("profile", systemImage: "person.fill") }
                 .tag(3)
@@ -27,6 +27,10 @@ struct MainTabView: View {
         .onChange(of: appState.pendingFollowUserId) { _, newValue in
             guard newValue != nil else { return }
             selectedTab = 2
+        }
+        .onChange(of: appState.pendingGroupId) { _, newValue in
+            guard newValue != nil else { return }
+            selectedTab = 0
         }
     }
 }

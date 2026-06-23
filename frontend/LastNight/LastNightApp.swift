@@ -58,9 +58,9 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
         let type = userInfo["type"] as? String
-
+        
         DispatchQueue.main.async {
-            if type == "photos_unlocked" || type == "member_joined",
+            if type == "photos_unlocked" || type == "member_joined" || type == "added_to_group",
                let groupId = userInfo["groupId"] as? String {
                 AppDelegate.shared?.appState?.pendingGroupId = groupId
             } else if type == "new_follower",
