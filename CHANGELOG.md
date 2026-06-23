@@ -37,7 +37,6 @@
 - tap to enlarge profile pics
 - deployment target lowered to iOS 17.6
 - settings rearranged
-
 - notifications fixed (hopefully)
 - onboarding screens (6-card carousel)
 - help button (groups screen + settings)
