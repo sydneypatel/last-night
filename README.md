@@ -2,7 +2,7 @@
 
 # last night.
 
-** capture the night, relive it tomorrow. **
+**capture the night, relive it tomorrow.**
 
 *a group photo app for the moments you'll want to remember — revealed all at once, to relive all the best memories!*
 
@@ -35,7 +35,7 @@ Each group decides when its photos unlock — the next morning at **sunrise**, a
 
 ## 🧠 tech stack
 
-### 📱 Frontend
+### 📱 frontend
 - **SwiftUI** — native iOS, built in Xcode
 - **Firebase Auth** — Google & Apple Sign-In
 - **AVFoundation** — custom camera capture
