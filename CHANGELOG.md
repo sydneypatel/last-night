@@ -59,3 +59,4 @@
 
 ## build 7
 - reporting feature complete: users can successfully make a report, and the admin can review the report and choose to remove or dismiss. removing will delete the photo from the database, subsequently removing the photo from any group, library, and featured grid. 
+- users can now block other users. they can see them in a list in their settings -> more -> blocked users.
