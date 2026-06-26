@@ -65,9 +65,8 @@
 - account deletion now cleans up the user's photos from S3
 - usernames now 3–16 chars, letters/numbers/_/. only, can't start or end with . or _
 - clear error messages: "username is taken," length/format errors now display instead of "something went wrong"
-- TODO:
--- TRY TO FIX NOTIFS FOR ALL
--- T&C content policy language 
--- timezone +1hr bug 
--- groups view not refreshing quick
--- API on EC2 port 3000 is open HTTP
+- t&c updated — section 7 moderation/reporting language for Apple
+- timezone +1hr bug fixed
+- RDS password rotated
+- owner can now remove members from group via members view
+- admin will receive push notif when photo is reported, nav to profile tab 
