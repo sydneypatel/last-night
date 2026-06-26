@@ -223,6 +223,15 @@ class APIClient {
         )
     }
     
+    func removeMember(groupId: String, userId: String) async throws {
+        struct RemoveResponse: Decodable { let removed: Bool }
+        let _: RemoveResponse = try await request(
+            path: "/groups/\(groupId)/members/\(userId)",
+            method: "DELETE",
+            body: nil
+        )
+    }
+    
     func getCoverUploadURL(groupId: String) async throws -> (uploadUrl: String, key: String) {
         struct CoverURLResponse: Decodable { let uploadUrl: String; let key: String }
         let response: CoverURLResponse = try await request(

@@ -299,7 +299,7 @@ struct GroupFeedView: View {
                     })
                 }
         .sheet(isPresented: $showingMembers) {
-            MembersView(groupId: group.id)
+            MembersView(groupId: group.id, isOwner: group.role == .owner)
         }
         .sheet(isPresented: $showingAddMembers) {
             AddMembersView(groupId: group.id, groupName: currentGroupName)
