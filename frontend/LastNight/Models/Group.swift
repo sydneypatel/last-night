@@ -4,7 +4,7 @@ struct Group: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let coverPhotoUrl: String?
-    let createdBy: String
+    let createdBy: String?
     let unlockMode: UnlockMode
     let unlockAt: Date?
     let timezone: String
@@ -46,7 +46,7 @@ struct Group: Codable, Identifiable, Hashable {
         name = try c.decode(String.self, forKey: .name)
         timezone = try c.decode(String.self, forKey: .timezone)
         coverPhotoUrl = try c.decodeIfPresent(String.self, forKey: .coverPhotoUrl)
-        createdBy = try c.decode(String.self, forKey: .createdBy)
+        createdBy = try c.decodeIfPresent(String.self, forKey: .createdBy)
         unlockMode = try c.decode(UnlockMode.self, forKey: .unlockMode)
         unlockAt = try c.decodeIfPresent(Date.self, forKey: .unlockAt)
         isActive = try c.decode(Bool.self, forKey: .isActive)

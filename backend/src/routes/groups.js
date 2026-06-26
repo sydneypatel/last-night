@@ -68,7 +68,6 @@ async function sendFCM(tokens, title, body, data = {}) {
 
 router.get('/', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
-  console.log(`[GROUPS] request from user: ${req.user.id} (${req.user.username})`);  
   try {
     const { rows } = await pool.query(
       `SELECT g.*, gm.role, gm.joined_at,
@@ -83,11 +82,8 @@ router.get('/', auth, async (req, res, next) => {
        ORDER BY g.created_at DESC`,
       [req.user.id]
     );
-    console.log(`[GROUPS] returning ${rows.length} groups for ${req.user.username}`); 
-
     res.json({ groups: rows });
   } catch (err) {
-    console.error('[GROUPS] error:', err.message);
     next(err);
   }
 });
