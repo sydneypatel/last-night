@@ -18,6 +18,7 @@ struct PhotoDetailView: View {
     @State private var localPhotos: [Photo]
     @State private var showingReportSheet = false
     @State private var showingReportConfirm = false
+    @State private var showingReportError = false
 
     init(photos: [Photo], startIndex: Int, groupName: String, onPhotoDeleted: ((String) -> Void)? = nil) {
         self.photos = photos
@@ -154,8 +155,13 @@ struct PhotoDetailView: View {
         } message: {
             Text("thanks for helping keep last night safe. our team will review this photo.")
         }
+        .alert("couldn't report", isPresented: $showingReportError) {
+            Button("ok", role: .cancel) {}
+        } message: {
+            Text("something went wrong. please try again.")
+        }
     }
-
+    
     private func deletePhoto() {
         let photo = currentPhoto
         isDeleting = true
@@ -195,6 +201,9 @@ struct PhotoDetailView: View {
                 }
             } catch {
                 print("Report error:", error)
+                await MainActor.run {
+                    showingReportError = true  // an alert: "couldn't report, try again"
+                }
             }
         }
     }
