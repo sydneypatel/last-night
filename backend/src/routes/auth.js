@@ -63,11 +63,33 @@ router.post('/avatar-upload-url', auth, async (req, res, next) => {
 router.delete('/account', auth, async (req, res, next) => {
   if (!req.user) return res.status(404).json({ error: 'User not found' });
   try {
-    // Delete from our DB
+    // Fetch all the user's photo S3 keys before deleting DB rows
+    const { rows: photos } = await pool.query(
+      'SELECT s3_key, thumbnail_key FROM photos WHERE user_id = $1',
+      [req.user.id]
+    );
+
+    // Delete the user's photo files from S3
+    if (photos.length > 0) {
+      const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+      const s3 = require('../config/s3');
+      const BUCKET = process.env.S3_BUCKET_NAME;
+      await Promise.all(photos.flatMap(p => {
+        const deletes = [s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: p.s3_key }))];
+        if (p.thumbnail_key) {
+          deletes.push(s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: p.thumbnail_key })));
+        }
+        return deletes;
+      }));
+    }
+
+    // Delete from our DB (photos, follows, group_members, etc. cascade via FKs)
     await pool.query('DELETE FROM users WHERE id = $1', [req.user.id]);
+
     // Also delete from Firebase Auth
     const admin = require('../config/firebase');
     await admin.auth().deleteUser(req.firebaseUid);
+
     res.json({ deleted: true });
   } catch (err) { next(err); }
 });
