@@ -161,7 +161,16 @@ private struct TermsContent: View {
             bodyText("Last Night allows you to create and join groups in which photos are shared among members and revealed at a set unlock time. When you join a group, your photos in that group are visible to other members of that group. When you share an invite link or code, anyone who uses it can join that group and view its content once unlocked. You are responsible for who you invite to your groups.")
 
             sectionHeader("7. Reporting and Moderation")
-            bodyText("We are committed to maintaining a safe and respectful community. We reserve the right to remove any content and to suspend or terminate any account that violates these Terms. Moderation decisions are made at our sole discretion. We are not obligated to remove content or take action in response to every report.")
+            bodyText("Last Night is a user-generated content platform. We are committed to maintaining a safe and respectful environment and take reports of objectionable content seriously.")
+
+            subHeader("7.1 Objectionable Content")
+            bodyText("Objectionable content includes, but is not limited to: content that is hateful, harassing, sexually explicit, violent, threatening, or that sexualizes or endangers minors. Such content is strictly prohibited and violates these Terms.")
+
+            subHeader("7.2 Reporting")
+            bodyText("If you encounter content you believe violates these Terms, you can report it directly within the App by tapping the report option on any photo or user profile. You may also contact us at sydney.j.patel@gmail.com.")
+
+            subHeader("7.3 Removal and Enforcement")
+            bodyText("We review reports and will remove content that violates these Terms within 24 hours of a report being reviewed. We reserve the right to suspend or permanently ban accounts that post objectionable content, at our sole discretion and without prior notice. We are not obligated to take action in response to every report, but we take all reports seriously.")
 
             sectionHeader("8. Intellectual Property")
             bodyText("All content, features, and functionality of the App — including the Last Night name, logo, design, code, and graphics — are the exclusive property of Last Night and its licensors and are protected by applicable intellectual property laws. You may not copy, reproduce, modify, distribute, or create derivative works of any part of the App without our prior written consent.")
