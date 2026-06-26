@@ -410,4 +410,24 @@ router.post('/:id/add-member', auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.delete('/:id/members/:userId', auth, async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not registered' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (rows.length === 0) return res.status(403).json({ error: 'Not a member' });
+    if (rows[0].role !== 'owner') return res.status(403).json({ error: 'Only owners can remove members' });
+    if (req.params.userId === req.user.id) return res.status(400).json({ error: 'Cannot remove yourself' });
+
+    const { rowCount } = await pool.query(
+      'DELETE FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [req.params.id, req.params.userId]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Member not found' });
+    res.json({ removed: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
