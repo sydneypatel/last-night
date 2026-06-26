@@ -58,5 +58,16 @@
 - push notifications now working when user follows another user, clicking on it brings you to their profile
 
 ## build 7
-- reporting feature complete: users can successfully make a report, and the admin can review the report and choose to remove or dismiss. removing will delete the photo from the database, subsequently removing the photo from any group, library, and featured grid. 
-- users can now block other users. they can see them in a list in their settings -> more -> blocked users.
+- reporting feature complete: users can successfully make a report (6 preset options), and the admin can review the report and choose to remove or dismiss. removing will delete the photo from S3, and also will remove the photo from any group, library, and featured grid. 
+- users can now block other users: mutual invisibility across search, group photos, member lists, profiles, and follows (unfollows both ways; blocked users can't re-follow); unblock under more → blocked users
+- fixed follow-notification taps not opening the profile on cold start (appear-time checks for pending nav)
+- fixed account deletion failing for users who created groups (created_by now nullable; groups survive with null creator)
+- account deletion now cleans up the user's photos from S3
+- usernames now 3–16 chars, letters/numbers/_/. only, can't start or end with . or _
+- clear error messages: "username is taken," length/format errors now display instead of "something went wrong"
+- TODO:
+-- TRY TO FIX NOTIFS FOR ALL
+-- T&C content policy language 
+-- timezone +1hr bug 
+-- groups view not refreshing quick
+-- API on EC2 port 3000 is open HTTP

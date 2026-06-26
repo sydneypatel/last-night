@@ -49,7 +49,7 @@ struct UsernameSetupView: View {
                         HStack {
                             Text("@")
                                 .foregroundColor(.gray)
-                            TextField("yourhandle", text: $username)
+                            TextField("your_handle", text: $username)
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled()
                         }
