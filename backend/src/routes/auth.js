@@ -8,25 +8,32 @@ router.post('/register', auth, async (req, res, next) => {
     if (req.user) return res.json({ user: req.user });
     const { username, displayName, timezone = 'America/New_York' } = req.body;
     if (!username || !displayName) return res.status(400).json({ error: 'username and displayName are required' });
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return res.status(400).json({ error: 'Username must be 3-20 characters, letters, numbers, and underscores only' });
+
+    if (!/^[a-zA-Z0-9_.]{3,16}$/.test(username)) {
+      return res.status(400).json({ error: 'username must be 3–16 characters: letters, numbers, _ and .' });
+    }
+    if (/^[._]|[._]$/.test(username)) {
+      return res.status(400).json({ error: 'username can\'t start or end with . or _' });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO users (firebase_uid, username, display_name, timezone) VALUES ($1, $2, $3, $4) RETURNING *`,
       [req.firebaseUid, username.toLowerCase(), displayName, timezone]
     );
     res.status(201).json({ user: rows[0] });
   } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'Username already taken' });
+    if (err.code === '23505') return res.status(409).json({ error: 'username already taken' });
     next(err);
   }
 });
 
 router.post('/sync', auth, async (req, res) => {
-  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  if (!req.user) return res.status(404).json({ error: 'user not found' });
   res.json({ user: req.user });
 });
 
 router.patch('/profile', auth, async (req, res, next) => {
-  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  if (!req.user) return res.status(404).json({ error: 'user not found' });
   try {
     const { displayName, avatarUrl, timezone, bio } = req.body;
     const { rows } = await pool.query(
@@ -38,7 +45,7 @@ router.patch('/profile', auth, async (req, res, next) => {
 });
 
 router.post('/avatar-upload-url', auth, async (req, res, next) => {
-  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  if (!req.user) return res.status(404).json({ error: 'user not found' });
   try {
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
@@ -61,7 +68,7 @@ router.post('/avatar-upload-url', auth, async (req, res, next) => {
 });
 
 router.delete('/account', auth, async (req, res, next) => {
-  if (!req.user) return res.status(404).json({ error: 'User not found' });
+  if (!req.user) return res.status(404).json({ error: 'user not found' });
   try {
     // Fetch all the user's photo S3 keys before deleting DB rows
     const { rows: photos } = await pool.query(
