@@ -28,6 +28,32 @@ router.post('/photo/:id', auth, async (req, res, next) => {
        ON CONFLICT (photo_id, reporter_id) DO NOTHING`,
       [req.params.id, req.user.id, reason]
     );
+
+    // Notify admins
+    try {
+      const { rows: adminTokenRows } = await pool.query(
+        `SELECT token FROM device_tokens WHERE user_id = ANY($1::uuid[])`,
+        [ADMIN_IDS]
+      );
+      const tokens = adminTokenRows.map(r => r.token);
+      if (tokens.length > 0) {
+        const admin = require('../config/firebaseAdmin');
+        await admin.messaging().sendEachForMulticast({
+          tokens,
+          notification: {
+            title: 'new report',
+            body: `a photo was reported for: ${reason}`,
+          },
+          data: {
+            type: 'admin_report',
+            photoId: req.params.id,
+          },
+        });
+      }
+    } catch (pushErr) {
+      console.error('Admin push failed (non-fatal):', pushErr);
+    }
+        
     res.status(201).json({ reported: true });
   } catch (err) { next(err); }
 });
