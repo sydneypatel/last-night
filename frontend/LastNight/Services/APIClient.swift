@@ -12,11 +12,11 @@ enum APIError: Error {
 class APIClient {
     static let shared = APIClient()
     private let baseURL = Constants.apiBaseURL
-
+    
     private init() {}
-
+    
     // MARK: - Core request method
-
+    
     private func request<T: Decodable>(
         path: String,
         method: String = "GET",
@@ -25,23 +25,23 @@ class APIClient {
         guard let url = URL(string: "\(baseURL)\(path)") else {
             throw APIError.badRequest("Invalid URL")
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
+        
         // Attach Firebase token
         if let token = try? await Auth.auth().currentUser?.getIDToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-
+        
         if let body {
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         }
-
+        
         let (data, response) = try await URLSession.shared.data(for: request)
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-
+        
         switch statusCode {
         case 200...201: break
         case 400:
@@ -56,7 +56,7 @@ class APIClient {
             let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? "Server error"
             throw APIError.serverError(msg)
         }
-
+        
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let decoded = try? decoder.decode(T.self, from: data) else {
@@ -64,9 +64,9 @@ class APIClient {
         }
         return decoded
     }
-
+    
     // MARK: - Auth
-
+    
     func register(username: String, displayName: String, timezone: String) async throws -> User {
         let response: UserResponse = try await request(
             path: "/auth/register",
@@ -75,7 +75,7 @@ class APIClient {
         )
         return response.user
     }
-
+    
     func syncUser() async throws -> User {
         let response: UserResponse = try await request(path: "/auth/sync", method: "POST")
         return response.user
@@ -101,11 +101,11 @@ class APIClient {
         )
         return (response.uploadUrl, response.key)
     }
-
+    
     func deleteAccount() async throws {
         let _: EmptyResponse = try await request(path: "/auth/account", method: "DELETE")
     }
-
+    
     // MARK: - Notifications
     
     func registerDeviceToken(_ token: String, environment: String) async throws {
@@ -117,12 +117,12 @@ class APIClient {
     }
     
     func unregisterDeviceToken(_ token: String) async throws {
-            let _: EmptyResponse = try await request(
-                path: "/notifications/device-token",
-                method: "DELETE",
-                body: ["token": token]
-            )
-        }
+        let _: EmptyResponse = try await request(
+            path: "/notifications/device-token",
+            method: "DELETE",
+            body: ["token": token]
+        )
+    }
     
     // MARK: - Social
     
@@ -130,42 +130,42 @@ class APIClient {
         let response: UserResponse = try await request(path: "/users/by-id/\(id)")
         return response.user
     }
-
+    
     func searchUsers(query: String) async throws -> [User] {
         let response: UsersResponse = try await request(path: "/users/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)")
         return response.users
     }
-
+    
     func getUserProfile(username: String) async throws -> User {
         let response: UserResponse = try await request(path: "/users/\(username)")
         return response.user
     }
-
+    
     func followUser(id: String) async throws {
         let _: FollowResponse = try await request(path: "/users/\(id)/follow", method: "POST")
     }
-
+    
     func unfollowUser(id: String) async throws {
         let _: FollowResponse = try await request(path: "/users/\(id)/follow", method: "DELETE")
     }
-
+    
     func getFollowers(userId: String) async throws -> [User] {
         let response: UsersResponse = try await request(path: "/users/\(userId)/followers")
         return response.users
     }
-
+    
     func getFollowing(userId: String) async throws -> [User] {
         let response: UsersResponse = try await request(path: "/users/\(userId)/following")
         return response.users
     }
     
     // MARK: - Groups
-
+    
     func getGroups() async throws -> [Group] {
-            let response: GroupsResponse = try await request(path: "/groups")
-            return response.groups
-        }
-
+        let response: GroupsResponse = try await request(path: "/groups")
+        return response.groups
+    }
+    
     func createGroup(name: String, unlockMode: String, unlockAt: Date?, timezone: String) async throws -> Group {
         var body: [String: Any] = ["name": name, "unlockMode": unlockMode, "timezone": timezone]
         if let unlockAt {
@@ -174,7 +174,7 @@ class APIClient {
         let response: GroupResponse = try await request(path: "/groups", method: "POST", body: body)
         return response.group
     }
-
+    
     func joinGroup(inviteCode: String) async throws -> Group {
         let response: GroupResponse = try await request(
             path: "/groups/join",
@@ -183,7 +183,7 @@ class APIClient {
         )
         return response.group
     }
-
+    
     func getGroup(id: String) async throws -> (Group, [User]) {
         let response: GroupDetailResponse = try await request(path: "/groups/\(id)")
         return (response.group, response.members)
@@ -196,17 +196,20 @@ class APIClient {
     }
     
     func updateUnlockTime(groupId: String, unlockMode: String, unlockAt: Date?) async throws -> Group {
-            var body: [String: Any] = ["unlockMode": unlockMode]
-            if let unlockAt {
-                body["unlockAt"] = ISO8601DateFormatter().string(from: unlockAt)
-            }
-            let response: GroupResponse = try await request(
-                path: "/groups/\(groupId)/unlock",
-                method: "PATCH",
-                body: body
-            )
-            return response.group
+        var body: [String: Any] = [
+            "unlockMode": unlockMode,
+            "timezone": TimeZone.current.identifier
+        ]
+        if let unlockAt {
+            body["unlockAt"] = ISO8601DateFormatter().string(from: unlockAt)
         }
+        let response: GroupResponse = try await request(
+            path: "/groups/\(groupId)/unlock",
+            method: "PATCH",
+            body: body
+        )
+        return response.group
+    }
     
     func leaveOrDeleteGroup(id: String) async throws {
         let _: EmptyResponse = try await request(path: "/groups/\(id)", method: "DELETE")
@@ -228,7 +231,7 @@ class APIClient {
         )
         return (response.uploadUrl, response.key)
     }
-
+    
     func updateGroupCover(groupId: String, coverUrl: String) async throws -> Group {
         let response: GroupResponse = try await request(
             path: "/groups/\(groupId)/cover",
@@ -249,9 +252,9 @@ class APIClient {
     func leaveGroup(id: String) async throws {
         let _: EmptyResponse = try await request(path: "/groups/\(id)/leave", method: "DELETE")
     }
-
+    
     // MARK: - Photos
-
+    
     func getUploadURL(groupId: String) async throws -> UploadURLResponse {
         return try await request(
             path: "/photos/upload-url",
@@ -259,7 +262,7 @@ class APIClient {
             body: ["groupId": groupId, "contentType": "image/jpeg"]
         )
     }
-
+    
     func confirmUpload(groupId: String, s3Key: String, thumbnailKey: String) async throws -> Photo {
         let response: PhotoResponse = try await request(
             path: "/photos/confirm",
@@ -268,12 +271,12 @@ class APIClient {
         )
         return response.photo
     }
-
+    
     func getPhotos(groupId: String) async throws -> [Photo] {
         let response: PhotosResponse = try await request(path: "/photos/group/\(groupId)")
         return response.photos
     }
-
+    
     func savePhoto(photoId: String) async throws {
         let _: EmptyResponse = try await request(path: "/photos/\(photoId)/save", method: "POST")
     }
@@ -289,9 +292,9 @@ class APIClient {
             body: ["reason": reason]
         )
     }
-
+    
     // MARK: - Library
-
+    
     func getLibrary() async throws -> [Photo] {
         let response: PhotosResponse = try await request(path: "/library")
         return response.photos
@@ -302,12 +305,12 @@ class APIClient {
     }
     
     // MARK: - Featured
-
+    
     func getFeaturedGrid(username: String) async throws -> [LNFeaturedSlot] {
         let response: LNFeaturedGrid = try await request(path: "/featured/\(username)")
         return response.grid
     }
-
+    
     func setFeaturedPhoto(position: Int, photoId: String?) async throws {
         var body: [String: Any] = [:]
         if let photoId { body["photoId"] = photoId }
@@ -317,7 +320,7 @@ class APIClient {
             body: body
         )
     }
-
+    
     func getMyPhotosForFeaturing() async throws -> [Photo] {
         let response: PhotosResponse = try await request(path: "/featured/me/library")
         return response.photos
