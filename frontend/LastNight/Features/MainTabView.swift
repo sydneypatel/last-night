@@ -32,6 +32,11 @@ struct MainTabView: View {
             guard newValue != nil else { return }
             selectedTab = 0
         }
+        .onChange(of: appState.pendingAdminReport) { _, newValue in
+            guard newValue else { return }
+            selectedTab = 3 // profile tab
+            appState.pendingAdminReport = false
+        }
         .task {
             if appState.pendingFollowUserId != nil {
                 selectedTab = 2

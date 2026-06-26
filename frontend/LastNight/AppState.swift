@@ -11,6 +11,7 @@ class AppState: ObservableObject {
     @Published var pendingGroupId: String? = nil
     @Published var pendingFollowUserId: String? = nil
     @Published var pendingInviteCode: String? = nil
+    @Published var pendingAdminReport = false
 
     // Latest FCM token, stashed by AppDelegate when it arrives. Used to
     // re-register the token after authentication completes (fixes the race

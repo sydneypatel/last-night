@@ -366,13 +366,16 @@ struct NotificationToggleRow: View {
 
 struct AdvancedSettingsView: View {
     @EnvironmentObject var appState: AppState
+    @State private var navigateToAdmin = false
     @State private var showingDeleteAccount = false
     @State private var showingPrivacyPolicy = false
     @State private var showingHowItWorks = false
     @State private var errorMessage: String?
 
+
     var body: some View {
         ZStack {
+            
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -476,6 +479,15 @@ struct AdvancedSettingsView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)
+            }
+        }
+        .navigationDestination(isPresented: $navigateToAdmin) {
+            AdminView()
+        }
+        .onAppear {
+            if appState.pendingAdminReport {
+                navigateToAdmin = true
+                appState.pendingAdminReport = false
             }
         }
         .navigationTitle("more")

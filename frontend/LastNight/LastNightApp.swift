@@ -66,6 +66,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             } else if type == "new_follower",
                       let userId = userInfo["userId"] as? String {
                 AppDelegate.shared?.appState?.pendingFollowUserId = userId
+            } else if type == "admin_report" {
+                AppDelegate.shared?.appState?.pendingAdminReport = true
             }
         }
         completionHandler()
