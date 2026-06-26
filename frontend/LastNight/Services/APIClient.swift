@@ -49,6 +49,9 @@ class APIClient {
             throw APIError.badRequest(msg)
         case 401: throw APIError.unauthorized
         case 404: throw APIError.notFound
+        case 409:
+            let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? "Conflict"
+            throw APIError.badRequest(msg)
         default:
             let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? "Server error"
             throw APIError.serverError(msg)
