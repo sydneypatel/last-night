@@ -34,26 +34,65 @@ async function sendFCM(tokens, title, body, data) {
   }
 }
 
+// function getNextSunriseInTimezone(timezone) {
+//   var now = new Date();
+//   var tomorrow = new Date(now);
+//   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+//   var parts = new Intl.DateTimeFormat('en-US', {
+//     timeZone: timezone,
+//     year: 'numeric',
+//     month: '2-digit',
+//     day: '2-digit',
+//   }).formatToParts(tomorrow);
+
+//   var year = parts.find(function(p) { return p.type === 'year'; }).value;
+//   var month = parts.find(function(p) { return p.type === 'month'; }).value;
+//   var day = parts.find(function(p) { return p.type === 'day'; }).value;
+
+//   var target = new Date(year + '-' + month + '-' + day + 'T06:30:00');
+//   var localTime = new Date(tomorrow.toLocaleString('en-US', { timeZone: timezone }));
+//   var utcOffset = localTime - tomorrow;
+//   return new Date(target.getTime() - utcOffset);
+// }
+
+function getOffsetMs(timeZone, date) {
+  var dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  });
+  var map = {};
+  dtf.formatToParts(date).forEach(function(p) { map[p.type] = p.value; });
+  if (map.hour === '24') map.hour = '00';
+  var asUTC = Date.UTC(+map.year, +map.month - 1, +map.day, +map.hour, +map.minute, +map.second);
+  return asUTC - date.getTime();
+}
+
+function zonedWallClockToUtc(year, month, day, hour, minute, timeZone) {
+  var guess = Date.UTC(year, month - 1, day, hour, minute, 0);
+  var offset = getOffsetMs(timeZone, new Date(guess));
+  return new Date(guess - offset);
+}
+
 function getNextSunriseInTimezone(timezone) {
-  var now = new Date();
-  var tomorrow = new Date(now);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-
-  var parts = new Intl.DateTimeFormat('en-US', {
+  var dtf = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(tomorrow);
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour12: false,
+  });
+  var map = {};
+  dtf.formatToParts(new Date()).forEach(function(p) { map[p.type] = p.value; });
 
-  var year = parts.find(function(p) { return p.type === 'year'; }).value;
-  var month = parts.find(function(p) { return p.type === 'month'; }).value;
-  var day = parts.find(function(p) { return p.type === 'day'; }).value;
+  // Build tomorrow's date in the user's timezone
+  var base = new Date(Date.UTC(+map.year, +map.month - 1, +map.day));
+  base.setUTCDate(base.getUTCDate() + 1);
 
-  var target = new Date(year + '-' + month + '-' + day + 'T06:30:00');
-  var localTime = new Date(tomorrow.toLocaleString('en-US', { timeZone: timezone }));
-  var utcOffset = localTime - tomorrow;
-  return new Date(target.getTime() - utcOffset);
+  return zonedWallClockToUtc(
+    base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(),
+    6, 30, timezone
+  );
 }
 
 exports.handler = async function(event) {
