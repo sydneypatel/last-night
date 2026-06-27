@@ -11,6 +11,7 @@ const featuredRoutes = require('./routes/featured');
 const notificationRoutes = require('./routes/notifications');
 const reportRoutes = require('./routes/reports');
 const blockRoutes = require('./routes/blocks');
+const contactRoutes = require('./routes/contacts')
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -30,6 +31,7 @@ app.use('/featured', featuredRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/reports', reportRoutes);
 app.use('/blocks', blockRoutes);
+app.use('/contacts', contactRoutes);
 
 app.use(errorHandler);
 
