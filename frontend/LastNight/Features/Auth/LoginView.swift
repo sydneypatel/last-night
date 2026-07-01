@@ -77,7 +77,7 @@ struct LoginView: View {
                 .padding(.bottom, 60)
             }
         }
-        .fullScreenCover(isPresented: $showingUsernameSetup) {
+        .sheet(isPresented: $showingUsernameSetup) {
             if let firebaseUser = pendingFirebaseUser {
                 UsernameSetupView(firebaseUser: firebaseUser)
                     .environmentObject(appState)
