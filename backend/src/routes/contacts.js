@@ -14,7 +14,12 @@ router.patch('/phone', auth, async (req, res, next) => {
       [phoneHash, req.user.id]
     );
     res.json({ saved: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'this phone number is already linked to another account.' });
+    }
+    next(err);
+  }
 });
 
 // Match hashed contacts against users in DB

@@ -118,7 +118,7 @@ struct SettingsView: View {
                     } label: {
                         HStack {
                             Image(systemName: "phone")
-                            Text("add phone number")
+                            Text(appState.currentUser?.hasPhone == true ? "update phone number" : "add phone number")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.caption)
