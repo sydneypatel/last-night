@@ -35,13 +35,9 @@ struct AddPhoneView: View {
                     .background(Color.white.opacity(0.08))
                     .cornerRadius(12)
                     .onChange(of: phoneNumber) { _, newValue in
-                        // Strip non-digits and cap at 10
                         let digits = newValue.filter { $0.isNumber }
-                        if digits.count > 10 {
-                            phoneNumber = String(digits.prefix(10))
-                        } else {
-                            phoneNumber = digits
-                        }
+                        let capped = String(digits.prefix(10))
+                        phoneNumber = formatPhone(capped)
                     }
 
                     // Contacts opt-in toggle
@@ -100,13 +96,24 @@ struct AddPhoneView: View {
                         Button("save") { save() }
                             .tint(.white)
                             .fontWeight(.semibold)
-                            .disabled(phoneNumber.count < 10)
+                            .disabled(phoneNumber.filter { $0.isNumber }.count < 10)
                     }
                 }
             }
             .task { await checkContactsStatus() }
             .preferredColorScheme(.dark)
         }
+    }
+    
+    private func formatPhone(_ digits: String) -> String {
+        var result = ""
+        for (i, char) in digits.enumerated() {
+            if i == 0 { result += "(" }
+            if i == 3 { result += ") " }
+            if i == 6 { result += "-" }
+            result.append(char)
+        }
+        return result
     }
 
     private func checkContactsStatus() async {
@@ -127,7 +134,8 @@ struct AddPhoneView: View {
     }
 
     private func save() {
-        let fullNumber = "+1\(phoneNumber)"
+        let digits = phoneNumber.filter { $0.isNumber }
+        let fullNumber = "+1\(digits)"
         guard let hash = ContactsMatcher.hashPhone(fullNumber) else {
             errorMessage = "enter a valid 10-digit phone number"
             return
@@ -145,6 +153,11 @@ struct AddPhoneView: View {
                     isSaving = false
                     onSaved()
                     dismiss()
+                }
+            } catch APIError.serverError(let msg) {
+                await MainActor.run {
+                    isSaving = false
+                    errorMessage = msg
                 }
             } catch {
                 await MainActor.run {
