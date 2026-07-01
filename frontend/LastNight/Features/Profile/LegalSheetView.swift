@@ -232,6 +232,10 @@ private struct PrivacyContent: View {
 
             subHeader("1.3 Information We Do Not Collect")
             bodyText("We do not collect payment information, precise GPS location, or any biometric data. We do not serve advertisements and do not collect data for advertising purposes.")
+            
+            subHeader("1.4 Phone Number and Contacts")
+            bodyText("You may optionally provide your phone number. We store only a one-way SHA-256 hash of your number — your raw phone number is never sent to or stored on our servers.")
+            bodyText("If you grant contacts permission, we hash your contacts' phone numbers on your device and send only the hashes to our servers to identify which of your contacts are already on Last Night. We never store, transmit, or retain your contacts list. Contact hashes are used solely for friend suggestions and are not linked to your identity.")
 
             sectionHeader("2. How We Use Your Information")
             bodyText("We use the information we collect to:")
