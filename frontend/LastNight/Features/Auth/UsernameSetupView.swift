@@ -7,7 +7,9 @@ struct UsernameSetupView: View {
 
     @State private var username = ""
     @State private var displayName = ""
+    @State private var phoneNumber = ""
     @State private var acceptedTerms = false
+    @State private var shareContacts = false
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLegal = false
@@ -57,6 +59,57 @@ struct UsernameSetupView: View {
                         .background(Color.white.opacity(0.08))
                         .cornerRadius(12)
                         .foregroundColor(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("phone number")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Text("optional")
+                                .font(.caption2)
+                                .foregroundColor(.gray.opacity(0.6))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.white.opacity(0.06))
+                                .cornerRadius(4)
+                        }
+                        TextField("+1 (555) 000-0000", text: $phoneNumber)
+                            .textFieldStyle(LNTextFieldStyle())
+                            .keyboardType(.phonePad)
+                    }
+
+                    // Contacts opt-in — only show if phone number entered
+                    if !phoneNumber.isEmpty {
+                        Button {
+                            shareContacts.toggle()
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                                        .frame(width: 22, height: 22)
+                                    if shareContacts {
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color.white)
+                                            .frame(width: 22, height: 22)
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.black)
+                                    }
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("find friends from your contacts")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                    Text("we'll never store your contacts or share them")
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .padding(.top, 2)
                     }
 
                     // Terms & Conditions
@@ -152,6 +205,19 @@ struct UsernameSetupView: View {
                 )
                 appState.currentUser = user
                 appState.isAuthenticated = true
+
+                // Save phone hash if provided
+                if !phoneNumber.isEmpty, let hash = ContactsMatcher.hashPhone(phoneNumber) {
+                    try? await APIClient.shared.savePhoneHash(hash)
+                }
+
+                // Request contacts + match if opted in
+                if shareContacts {
+                    if let hashes = await ContactsMatcher.requestAndHashContacts() {
+                        _ = try? await APIClient.shared.matchContacts(hashes: hashes)
+                    }
+                }
+
             } catch APIError.badRequest(let msg) {
                 errorMessage = msg
             } catch {

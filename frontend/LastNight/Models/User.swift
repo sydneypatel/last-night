@@ -15,6 +15,7 @@ struct User: Codable, Identifiable {
     var isFollowing: Bool?
     var followerCount: Int?
     var followingCount: Int?
+    var hasPhone: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -29,6 +30,7 @@ struct User: Codable, Identifiable {
         case isFollowing = "is_following"
         case followerCount = "follower_count"
         case followingCount = "following_count"
+        case hasPhone = "has_phone"
     }
 
     init(from decoder: Decoder) throws {
@@ -43,6 +45,7 @@ struct User: Codable, Identifiable {
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
         role = try c.decodeIfPresent(String.self, forKey: .role)
         isFollowing = try c.decodeIfPresent(Bool.self, forKey: .isFollowing)
+        hasPhone = try c.decodeIfPresent(Bool.self, forKey: .hasPhone)
 
         // Postgres COUNT() can come back as String or Int — handle both
         if let intVal = try? c.decodeIfPresent(Int.self, forKey: .followerCount) {

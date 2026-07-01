@@ -335,6 +335,27 @@ class APIClient {
         return response.photos
     }
     
+    // MARK: - Contacts
+    
+    func savePhoneHash(_ hash: String) async throws {
+        struct Response: Decodable { let saved: Bool }
+        let _: Response = try await request(
+            path: "/contacts/phone",
+            method: "PATCH",
+            body: ["phoneHash": hash]
+        )
+    }
+
+    func matchContacts(hashes: [String]) async throws -> [SuggestedUser] {
+        struct Response: Decodable { let matches: [SuggestedUser] }
+        let response: Response = try await request(
+            path: "/contacts/match",
+            method: "POST",
+            body: ["hashes": hashes]
+        )
+        return response.matches
+    }
+    
     // MARK: - Admin / Reports
     
     struct AdminReport: Decodable, Identifiable {

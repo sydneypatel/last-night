@@ -1,4 +1,5 @@
 import SwiftUI
+import Contacts
 
 struct SearchView: View {
     @EnvironmentObject var appState: AppState
@@ -7,6 +8,8 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
     @State private var navigationPath = NavigationPath()
+    @State private var suggestedUsers: [SuggestedUser] = []
+    @State private var isLoadingSuggestions = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -14,13 +17,43 @@ struct SearchView: View {
                 Color.black.ignoresSafeArea()
 
                 if query.count < 2 {
-                    VStack(spacing: 12) {
-                        Spacer().frame(height: 80)
-                        Image(systemName: "magnifyingglass")
-                            .font(.largeTitle)
-                            .foregroundColor(.white.opacity(0.3))
-                        Text("search for people")
-                            .foregroundColor(.gray)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if !suggestedUsers.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("people you may know")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal)
+                                        .padding(.top, 16)
+
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 12) {
+                                            ForEach(suggestedUsers) { user in
+                                                NavigationLink(value: user.username) {
+                                                    SuggestedUserCard(user: user)
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                    }
+                                }
+                                .padding(.bottom, 24)
+                            }
+
+                            VStack(spacing: 12) {
+                                Spacer().frame(height: suggestedUsers.isEmpty ? 80 : 0)
+                                Image(systemName: "magnifyingglass")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.white.opacity(0.3))
+                                Text("search for people")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, suggestedUsers.isEmpty ? 0 : 20)
+                        }
                     }
                 } else if isSearching {
                     ProgressView().tint(.white).padding(.top, 60)
@@ -72,6 +105,7 @@ struct SearchView: View {
             .task {
                 handlePendingFollow()
             }
+            .task { await loadSuggestions() }
             
         }
         .preferredColorScheme(.dark)
@@ -91,6 +125,22 @@ struct SearchView: View {
                 await MainActor.run { appState.pendingFollowUserId = nil }
             }
         }
+    }
+    
+    private func loadSuggestions() async {
+        // Only run if user has already granted contacts permission
+        let store = CNContactStore()
+        let status = CNContactStore.authorizationStatus(for: .contacts)
+        guard status == .authorized else { return }
+        
+        guard let hashes = await ContactsMatcher.requestAndHashContacts() else { return }
+        isLoadingSuggestions = true
+        do {
+            suggestedUsers = try await APIClient.shared.matchContacts(hashes: hashes)
+        } catch {
+            print("Suggestions error:", error)
+        }
+        isLoadingSuggestions = false
     }
     
     private func performSearch(_ q: String) async {
@@ -188,5 +238,48 @@ struct SearchResultRow: View {
             }
             isLoading = false
         }
+    }
+}
+
+struct SuggestedUserCard: View {
+    let user: SuggestedUser
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let urlStr = user.avatarUrl, let url = URL(string: urlStr) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle().fill(Color.white.opacity(0.1))
+                }
+                .frame(width: 56, height: 56)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Text(user.displayName.prefix(1))
+                            .foregroundColor(.white)
+                            .font(.title3)
+                    )
+            }
+
+            Text(user.displayName)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+                .lineLimit(1)
+
+            Text("@\(user.username)")
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .lineLimit(1)
+        }
+        .frame(width: 90)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(Color.white.opacity(0.06))
+        .cornerRadius(14)
     }
 }

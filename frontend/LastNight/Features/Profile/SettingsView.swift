@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isUploadingAvatar = false
     @State private var cropImage: UIImage?
+    @State private var showingAddPhone = false
+    @State private var phoneNumber = ""
 
     var body: some View {
         ZStack {
@@ -110,6 +112,23 @@ struct SettingsView: View {
                         .background(Color.white.opacity(0.07))
                         .cornerRadius(12)
                     }
+                    
+                    Button {
+                        showingAddPhone = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "phone")
+                            Text("add phone number")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.07))
+                        .cornerRadius(12)
+                    }
 
                     NavigationLink {
                         AdvancedSettingsView()
@@ -188,6 +207,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingChangeBio) {
             EditBioSheet(bio: $newBio, onSave: { updateBio() })
+        }
+        .sheet(isPresented: $showingAddPhone) {
+            AddPhoneView(onSaved: { showingAddPhone = false })
+                .environmentObject(appState)
         }
         .preferredColorScheme(.dark)
     }

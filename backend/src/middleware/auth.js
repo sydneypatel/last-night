@@ -11,7 +11,7 @@ module.exports = async function auth(req, res, next) {
     req.firebaseUid = decoded.uid;
     req.firebaseEmail = decoded.email;
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE firebase_uid = $1',
+      'SELECT *, (phone_hash IS NOT NULL) AS has_phone FROM users WHERE firebase_uid = $1',
       [decoded.uid]
     );
     if (rows.length > 0) req.user = rows[0];
