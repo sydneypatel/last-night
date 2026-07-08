@@ -40,7 +40,7 @@ struct UsernameSetupView: View {
                         Text("display name")
                             .font(.caption)
                             .foregroundColor(.gray)
-                        TextField("Your name", text: $displayName)
+                        TextField("", text: $displayName, prompt: Text("your name").foregroundColor(.white.opacity(0.25)))
                             .textFieldStyle(LNTextFieldStyle())
                     }
 
@@ -51,7 +51,7 @@ struct UsernameSetupView: View {
                         HStack {
                             Text("@")
                                 .foregroundColor(.gray)
-                            TextField("your_handle", text: $username)
+                            TextField("", text: $username, prompt: Text("your_handle").foregroundColor(.white.opacity(0.25)))
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled()
                         }
@@ -74,9 +74,23 @@ struct UsernameSetupView: View {
                                 .background(Color.white.opacity(0.06))
                                 .cornerRadius(4)
                         }
-                        TextField("+1 (555) 000-0000", text: $phoneNumber)
-                            .textFieldStyle(LNTextFieldStyle())
-                            .keyboardType(.phonePad)
+                        HStack(spacing: 0) {
+                            Text("+1 ")
+                                .foregroundColor(.white)
+                                .padding(.leading, 16)
+                            TextField("", text: $phoneNumber, prompt: Text("(555) 000-0000").foregroundColor(.white.opacity(0.25)))
+                                .keyboardType(.numberPad)
+                                .foregroundColor(.white)
+                                .padding(.vertical, 16)
+                                .padding(.trailing, 16)
+                        }
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(12)
+                        .onChange(of: phoneNumber) { _, newValue in
+                            let digits = newValue.filter { $0.isNumber }
+                            let capped = String(digits.prefix(10))
+                            phoneNumber = formatPhone(capped)
+                        }
                     }
 
                     // Contacts opt-in — only show if phone number entered
@@ -196,7 +210,7 @@ struct UsernameSetupView: View {
         errorMessage = nil
         let tz = TimeZone.current.identifier
 
-        Task {
+        Task { @MainActor in
             do {
                 let user = try await APIClient.shared.register(
                     username: username,
@@ -205,13 +219,16 @@ struct UsernameSetupView: View {
                 )
                 appState.currentUser = user
                 appState.isAuthenticated = true
+                appState.pendingFirebaseUser = nil
 
-                // Save phone hash if provided
-                if !phoneNumber.isEmpty, let hash = ContactsMatcher.hashPhone(phoneNumber) {
-                    try? await APIClient.shared.savePhoneHash(hash)
+                if !phoneNumber.isEmpty {
+                    let digits = phoneNumber.filter { $0.isNumber }
+                    let fullNumber = "+1\(digits)"
+                    if let hash = ContactsMatcher.hashPhone(fullNumber) {
+                        try? await APIClient.shared.savePhoneHash(hash)
+                    }
                 }
 
-                // Request contacts + match if opted in
                 if shareContacts {
                     if let hashes = await ContactsMatcher.requestAndHashContacts() {
                         _ = try? await APIClient.shared.matchContacts(hashes: hashes)
@@ -225,6 +242,17 @@ struct UsernameSetupView: View {
             }
             isLoading = false
         }
+    }
+    
+    private func formatPhone(_ digits: String) -> String {
+        var result = ""
+        for (i, char) in digits.enumerated() {
+            if i == 0 { result += "(" }
+            if i == 3 { result += ") " }
+            if i == 6 { result += "-" }
+            result.append(char)
+        }
+        return result
     }
 }
 

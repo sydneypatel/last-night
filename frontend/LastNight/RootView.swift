@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
@@ -16,11 +17,14 @@ struct RootView: View {
                         hasSeenOnboarding = true
                     }
                 }
+            } else if let pendingUser = appState.pendingFirebaseUser {
+                UsernameSetupView(firebaseUser: pendingUser)
             } else {
                 LoginView()
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appState.isAuthenticated)
+        .animation(.easeInOut(duration: 0.3), value: appState.pendingFirebaseUser?.uid)
     }
 }
 

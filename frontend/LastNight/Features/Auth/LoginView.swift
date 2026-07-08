@@ -7,8 +7,8 @@ import CryptoKit
 
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showingUsernameSetup = false
-    @State private var pendingFirebaseUser: FirebaseAuth.User?
+//    @State private var showingUsernameSetup = false
+//    @State private var pendingFirebaseUser: FirebaseAuth.User?
     @State private var errorMessage: String?
     @State private var currentNonce: String?
     @State private var appleDelegate: AppleSignInDelegate?
@@ -77,12 +77,12 @@ struct LoginView: View {
                 .padding(.bottom, 60)
             }
         }
-        .sheet(isPresented: $showingUsernameSetup) {
-            if let firebaseUser = pendingFirebaseUser {
-                UsernameSetupView(firebaseUser: firebaseUser)
-                    .environmentObject(appState)
-            }
-        }
+//        .sheet(isPresented: $showingUsernameSetup) {
+//            if let firebaseUser = pendingFirebaseUser {
+//                UsernameSetupView(firebaseUser: firebaseUser)
+//                    .environmentObject(appState)
+//            }
+//        }
     }
 
     // MARK: - Google
@@ -141,19 +141,18 @@ struct LoginView: View {
     private func completeFirebaseSignIn(with credential: AuthCredential) {
         Auth.auth().signIn(with: credential) { authResult, error in
             if let error {
-                errorMessage = error.localizedDescription
+                Task { @MainActor in errorMessage = error.localizedDescription }
                 return
             }
             guard let firebaseUser = authResult?.user else { return }
 
-            Task {
+            Task { @MainActor in
                 do {
                     let dbUser = try await APIClient.shared.syncUser()
                     appState.currentUser = dbUser
                     appState.isAuthenticated = true
                 } catch APIError.notFound {
-                    pendingFirebaseUser = firebaseUser
-                    showingUsernameSetup = true
+                    appState.pendingFirebaseUser = firebaseUser
                 } catch {
                     errorMessage = error.localizedDescription
                 }
