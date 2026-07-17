@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import ActivityKit
 
 struct GroupFeedView: View {
     let group: Group
@@ -280,6 +281,9 @@ struct GroupFeedView: View {
             ) { newMode, newUnlockAt in
                 currentUnlockMode = newMode
                 currentUnlockAt = newUnlockAt
+                if let newUnlockAt {
+                    GroupLiveActivityManager.updateUnlockDate(groupId: group.id, newUnlockDate: newUnlockAt)
+                }
             }
         }
         .task {
@@ -428,6 +432,20 @@ struct PhotoGridCell: View {
                     Image(systemName: "lock.fill")
                         .foregroundColor(.white.opacity(0.6))
                         .font(.title3)
+                } else if photo.mediaType == .video {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: "play.fill")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .padding(6)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                                .padding(6)
+                        }
+                    }
                 }
             }
         }

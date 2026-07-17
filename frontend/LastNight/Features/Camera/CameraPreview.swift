@@ -8,10 +8,6 @@ struct CameraPreview: UIViewRepresentable {
         let view = PreviewView()
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspectFill
-        if let connection = view.videoPreviewLayer.connection,
-           connection.isVideoRotationAngleSupported(90) {
-            connection.videoRotationAngle = 90
-        }
         return view
     }
 
@@ -24,6 +20,14 @@ struct CameraPreview: UIViewRepresentable {
 
         var videoPreviewLayer: AVCaptureVideoPreviewLayer {
             layer as! AVCaptureVideoPreviewLayer
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            if let connection = videoPreviewLayer.connection,
+               connection.isVideoRotationAngleSupported(90) {
+                connection.videoRotationAngle = 90
+            }
         }
     }
 }

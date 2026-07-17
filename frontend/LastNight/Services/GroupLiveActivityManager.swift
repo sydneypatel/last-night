@@ -66,4 +66,15 @@ enum GroupLiveActivityManager {
             Task { await activity.end(nil, dismissalPolicy: .immediate) }
         }
     }
+    
+    static func updateUnlockDate(groupId: String, newUnlockDate: Date) {
+        guard let activity = Activity<GroupActivityAttributes>.activities.first(where: { $0.attributes.groupId == groupId }) else {
+            return
+        }
+        Task {
+            var state = activity.content.state
+            state.unlockDate = newUnlockDate
+            await activity.update(.init(state: state, staleDate: newUnlockDate))
+        }
+    }
 }

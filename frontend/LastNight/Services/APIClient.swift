@@ -272,19 +272,21 @@ class APIClient {
     
     // MARK: - Photos
     
-    func getUploadURL(groupId: String) async throws -> UploadURLResponse {
+    func getUploadURL(groupId: String, contentType: String = "image/jpeg") async throws -> UploadURLResponse {
         return try await request(
             path: "/photos/upload-url",
             method: "POST",
-            body: ["groupId": groupId, "contentType": "image/jpeg"]
+            body: ["groupId": groupId, "contentType": contentType]
         )
     }
-    
-    func confirmUpload(groupId: String, s3Key: String, thumbnailKey: String) async throws -> Photo {
+
+    func confirmUpload(groupId: String, s3Key: String, thumbnailKey: String, mediaType: String = "photo", durationSeconds: Double? = nil) async throws -> Photo {
+        var body: [String: Any] = ["groupId": groupId, "s3Key": s3Key, "thumbnailKey": thumbnailKey, "mediaType": mediaType]
+        if let durationSeconds { body["durationSeconds"] = durationSeconds }
         let response: PhotoResponse = try await request(
             path: "/photos/confirm",
             method: "POST",
-            body: ["groupId": groupId, "s3Key": s3Key, "thumbnailKey": thumbnailKey]
+            body: body
         )
         return response.photo
     }

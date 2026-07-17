@@ -26,7 +26,7 @@ const liveActivityProvider = new apn.Provider({
     keyId: process.env.APNS_KEY_ID,
     teamId: process.env.APNS_TEAM_ID,
   },
-  production: true, // App Store builds use the production APNs environment
+  production: process.env.APNS_ENVIRONMENT === 'production', // App Store builds use the production APNs environment
 });
 
 async function sendFCM(tokens, title, body, data) {

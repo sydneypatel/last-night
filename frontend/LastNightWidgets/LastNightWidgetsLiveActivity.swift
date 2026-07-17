@@ -29,38 +29,44 @@ struct LastNightWidgetsLiveActivity: Widget {
         ActivityConfiguration(for: GroupActivityAttributes.self) { context in
             let unlock = unlockLabel(for: context.state.unlockDate)
 
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "camera.fill")
-                    .font(.title2)
-                    .foregroundColor(.white)
-                    .padding(.top, 2)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(context.attributes.groupName)
-                        .font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: "camera.fill")
+                        .font(.title2)
                         .foregroundColor(.white)
-                    Text("\(context.state.photoCount) photo\(context.state.photoCount == 1 ? "" : "s") so far")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.top, 2)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(context.attributes.groupName)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Text("\(context.state.photoCount) photo\(context.state.photoCount == 1 ? "" : "s") so far")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("unlocks \(unlock.dayText)")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.5))
+                        Text(unlock.timeText)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                    }
                 }
 
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("unlocks \(unlock.dayText)")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.5))
-                    Text(unlock.timeText)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                }
+                Text("last night.")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.35))
             }
             .padding(18)
             .activityBackgroundTint(Color.black)
             .activitySystemActionForegroundColor(Color.white)
             .widgetURL(URL(string: "lastnight://camera/\(context.attributes.groupId)"))
-
+            
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {

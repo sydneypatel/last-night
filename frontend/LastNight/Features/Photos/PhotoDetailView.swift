@@ -1,5 +1,6 @@
 import SwiftUI
 import Photos
+import AVKit
 
 struct PhotoDetailView: View {
     let photos: [Photo]
@@ -310,7 +311,10 @@ struct PhotoPageView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let url = photo.url, let imageURL = URL(string: url) {
+            if photo.mediaType == .video, let url = photo.url, let videoURL = URL(string: url) {
+                VideoPlayer(player: AVPlayer(url: videoURL))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let url = photo.url, let imageURL = URL(string: url) {
                 AsyncImage(url: imageURL) { image in
                     image
                         .resizable()
