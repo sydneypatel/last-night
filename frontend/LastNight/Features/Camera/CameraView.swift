@@ -144,22 +144,27 @@ struct CameraView: View {
                         .cornerRadius(viewModel.isRecordingVideo ? 8 : 31)
                         .animation(.easeInOut(duration: 0.2), value: viewModel.isRecordingVideo)
                 }
-                .gesture(
-                    LongPressGesture(minimumDuration: 0.3)
-                        .onEnded { _ in
-                            guard !viewModel.isFrontCamera else { return }
-                            viewModel.startRecording()
-                        }
-                        .simultaneously(with: DragGesture(minimumDistance: 0)
-                            .onEnded { _ in
-                                if viewModel.isRecordingVideo {
-                                    viewModel.stopRecording()
-                                } else if !viewModel.isCapturing {
-                                    viewModel.capturePhoto()
-                                }
-                            }
-                        )
-                )
+                .onTapGesture {
+                    if !viewModel.isCapturing {
+                        viewModel.capturePhoto()
+                    }
+                }
+//                .gesture(
+//                    LongPressGesture(minimumDuration: 0.3)
+//                        .onEnded { _ in
+//                            guard !viewModel.isFrontCamera else { return }
+//                            viewModel.startRecording()
+//                        }
+//                        .simultaneously(with: DragGesture(minimumDistance: 0)
+//                            .onEnded { _ in
+//                                if viewModel.isRecordingVideo {
+//                                    viewModel.stopRecording()
+//                                } else if !viewModel.isCapturing {
+//                                    viewModel.capturePhoto()
+//                                }
+//                            }
+//                        )
+//                )
                 .padding(.bottom, 48)
             }
 
@@ -239,8 +244,10 @@ struct CameraView: View {
             do {
                 let videoData = try Data(contentsOf: url)
                 let thumbnailImage = try await extractFirstFrame(from: url)
-                guard let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.7) else { return }
-
+                guard let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.7) else {
+                    print("Video upload failed: could not create thumbnail data")
+                    return
+                }
                 let duration = try await videoDuration(url: url)
 
                 let videoUploadResponse = try await APIClient.shared.getUploadURL(groupId: groupId, contentType: "video/quicktime")
@@ -252,7 +259,7 @@ struct CameraView: View {
                 let photo = try await APIClient.shared.confirmUpload(
                     groupId: groupId,
                     s3Key: videoUploadResponse.s3Key,
-                    thumbnailKey: thumbUploadResponse.thumbnailKey,
+                    thumbnailKey: thumbUploadResponse.s3Key,
                     mediaType: "video",
                     durationSeconds: duration
                 )
