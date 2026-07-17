@@ -9,14 +9,31 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+private func unlockLabel(for date: Date) -> (dayText: String, timeText: String) {
+    let calendar = Calendar.current
+    let timeText = date.formatted(date: .omitted, time: .shortened)
+
+    if calendar.isDateInToday(date) {
+        return ("today", timeText)
+    } else if calendar.isDateInTomorrow(date) {
+        return ("tomorrow", timeText)
+    } else {
+        let dayText = date.formatted(.dateTime.month(.abbreviated).day())
+        return (dayText, timeText)
+    }
+}
+
+
 struct LastNightWidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: GroupActivityAttributes.self) { context in
-            // Lock screen / banner UI
-            HStack(spacing: 14) {
+            let unlock = unlockLabel(for: context.state.unlockDate)
+
+            HStack(alignment: .top, spacing: 14) {
                 Image(systemName: "camera.fill")
                     .font(.title2)
                     .foregroundColor(.white)
+                    .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(context.attributes.groupName)
@@ -30,16 +47,16 @@ struct LastNightWidgetsLiveActivity: Widget {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("unlocks at")
+                    Text("unlocks \(unlock.dayText)")
                         .font(.caption2)
                         .foregroundColor(.white.opacity(0.5))
-                    Text(context.state.unlockDate, style: .time)
+                    Text(unlock.timeText)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                 }
             }
-            .padding(16)
+            .padding(18)
             .activityBackgroundTint(Color.black)
             .activitySystemActionForegroundColor(Color.white)
             .widgetURL(URL(string: "lastnight://camera/\(context.attributes.groupId)"))

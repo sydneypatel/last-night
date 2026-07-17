@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const admin = require('firebase-admin');
+const apn = require('apn');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,6 +18,17 @@ if (!admin.apps.length) {
   });
 }
 
+const IOS_BUNDLE_ID = 'com.sydneypatel.LastNight';
+
+const liveActivityProvider = new apn.Provider({
+  token: {
+    key: process.env.APNS_AUTH_KEY.replace(/\\n/g, '\n'),
+    keyId: process.env.APNS_KEY_ID,
+    teamId: process.env.APNS_TEAM_ID,
+  },
+  production: true, // App Store builds use the production APNs environment
+});
+
 async function sendFCM(tokens, title, body, data) {
   if (!tokens || tokens.length === 0) return;
   data = data || {};
@@ -32,6 +44,47 @@ async function sendFCM(tokens, title, body, data) {
   } catch (err) {
     console.error('FCM error:', err);
   }
+}
+
+async function endLiveActivities(client, groupId, finalPhotoCount, unlockAtDate) {
+  var tokensResult = await client.query(
+    'SELECT token FROM live_activity_tokens WHERE group_id = $1',
+    [groupId]
+  );
+  var tokens = tokensResult.rows.map(function(r) { return r.token; });
+  if (tokens.length === 0) return;
+
+  var nowSeconds = Math.floor(Date.now() / 1000);
+  var unlockSeconds = Math.floor(unlockAtDate.getTime() / 1000);
+
+  for (var i = 0; i < tokens.length; i++) {
+    var notification = new apn.Notification();
+    notification.topic = IOS_BUNDLE_ID + '.push-type.liveactivity';
+    notification.pushType = 'liveactivity';
+    notification.priority = 10;
+    notification.rawPayload = {
+      aps: {
+        timestamp: nowSeconds,
+        event: 'end',
+        'content-state': {
+          photoCount: finalPhotoCount,
+          unlockDate: unlockSeconds,
+        },
+        'dismissal-date': nowSeconds,
+      },
+    };
+
+    try {
+      var result = await liveActivityProvider.send(notification, tokens[i]);
+      if (result.failed.length > 0) {
+        console.error('Live Activity push failed:', JSON.stringify(result.failed[0].response));
+      }
+    } catch (err) {
+      console.error('Live Activity push error:', err);
+    }
+  }
+
+  await client.query('DELETE FROM live_activity_tokens WHERE group_id = $1', [groupId]);
 }
 
 // function getNextSunriseInTimezone(timezone) {
@@ -116,6 +169,7 @@ exports.handler = async function(event) {
 
     if (groupsToUnlock.length === 0) {
       await client.query('COMMIT');
+      liveActivityProvider.shutdown();
       return { statusCode: 200, body: 'No groups to unlock' };
     }
 
@@ -145,6 +199,8 @@ exports.handler = async function(event) {
 
       await sendFCM(tokens, group.name + ' \uD83D\uDCF8', "last night's photos just unlocked!", { type: 'photos_unlocked', groupId: group.id });
 
+      await endLiveActivities(client, group.id, rowCount, new Date(group.unlock_at));
+
       unlockedGroups.push({
         groupId: group.id,
         groupName: group.name,
@@ -161,6 +217,7 @@ exports.handler = async function(event) {
 
     await client.query('COMMIT');
     console.log('Unlock complete:', JSON.stringify(unlockedGroups));
+    liveActivityProvider.shutdown();
     return { statusCode: 200, body: JSON.stringify({ unlockedGroups: unlockedGroups }) };
 
   } catch (err) {

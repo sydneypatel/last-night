@@ -2,6 +2,7 @@
   "name": "last-night-sunrise-unlock",
   "version": "1.0.0",
   "dependencies": {
+    "apn": "^2.2.0",
     "firebase-admin": "^12.7.0",
     "node-fetch": "^2.7.0",
     "pg": "^8.11.0"
