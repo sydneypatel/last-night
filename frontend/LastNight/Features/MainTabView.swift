@@ -1,8 +1,13 @@
 import SwiftUI
 
+private struct IdentifiableGroupId: Identifiable {
+    let id: String
+}
+
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @State private var selectedTab = 0
+    @State private var cameraGroupId: IdentifiableGroupId?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -17,7 +22,7 @@ struct MainTabView: View {
             SearchView()
                 .tabItem { Label("search", systemImage: "magnifyingglass") }
                 .tag(2)
-            
+
             ProfileView()
                 .tabItem { Label("profile", systemImage: "person.fill") }
                 .tag(3)
@@ -34,14 +39,29 @@ struct MainTabView: View {
         }
         .onChange(of: appState.pendingAdminReport) { _, newValue in
             guard newValue else { return }
-            selectedTab = 3 // profile tab
+            selectedTab = 3
             appState.pendingAdminReport = false
+        }
+        .onChange(of: appState.pendingCameraGroupId) { _, newValue in
+            guard let groupId = newValue else { return }
+            selectedTab = 0
+            cameraGroupId = IdentifiableGroupId(id: groupId)
+            appState.pendingCameraGroupId = nil
+        }
+        .fullScreenCover(item: $cameraGroupId) { wrapped in
+            CameraView(groupId: wrapped.id) { _ in
+                cameraGroupId = nil
+            }
         }
         .task {
             if appState.pendingFollowUserId != nil {
                 selectedTab = 2
             } else if appState.pendingGroupId != nil {
                 selectedTab = 0
+            } else if let groupId = appState.pendingCameraGroupId {
+                selectedTab = 0
+                cameraGroupId = IdentifiableGroupId(id: groupId)
+                appState.pendingCameraGroupId = nil
             }
         }
     }

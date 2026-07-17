@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import MediaPlayer
 import Combine
+import ActivityKit
 
 class OrientationObserver: ObservableObject {
     @Published var angle: Angle = .degrees(0)
@@ -142,7 +143,6 @@ struct CameraView: View {
     }
 
     private func uploadPhoto(image: UIImage) {
-        // Dismiss instantly — upload happens in background
         viewModel.stopSession()
         dismiss()
 
@@ -159,9 +159,35 @@ struct CameraView: View {
                 await MainActor.run {
                     onPhotoTaken(photo)
                 }
+                await syncLiveActivity()
             } catch {
                 print("Background upload failed:", error)
             }
+        }
+    }
+
+    private func syncLiveActivity() async {
+        do {
+            let (group, _) = try await APIClient.shared.getGroup(id: groupId)
+            let photos = try await APIClient.shared.getPhotos(groupId: groupId)
+
+            await MainActor.run {
+                let alreadyRunning = Activity<GroupActivityAttributes>.activities.contains {
+                    $0.attributes.groupId == groupId
+                }
+                if alreadyRunning {
+                    GroupLiveActivityManager.updatePhotoCount(groupId: groupId, newCount: photos.count)
+                } else if let unlockAt = group.unlockAt {
+                    GroupLiveActivityManager.start(
+                        groupId: groupId,
+                        groupName: group.name,
+                        unlockDate: unlockAt,
+                        photoCount: photos.count
+                    )
+                }
+            }
+        } catch {
+            print("Failed to sync live activity:", error)
         }
     }
 

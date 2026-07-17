@@ -110,15 +110,24 @@ struct LastNightApp: App {
     }
 
     private func handleIncomingURL(_ url: URL) {
-        // Let Google Sign-In handle its own OAuth callback URLs first
         if GIDSignIn.sharedInstance.handle(url) {
+            return
+        }
+
+        // Custom scheme from Live Activity tap: lastnight://camera/<groupId>
+        if url.scheme == "lastnight" {
+            if url.host == "camera" {
+                let parts = url.pathComponents.filter { $0 != "/" }
+                if let groupId = parts.first {
+                    appState.pendingCameraGroupId = groupId
+                }
+            }
             return
         }
 
         // Universal link: last-night-app.com/join/<CODE>
         guard url.host == "last-night-app.com" else { return }
         let parts = url.pathComponents.filter { $0 != "/" }
-        // parts == ["join", "CODE"]
         if parts.count == 2, parts[0] == "join" {
             let code = parts[1]
             appState.handleInviteCode(code)

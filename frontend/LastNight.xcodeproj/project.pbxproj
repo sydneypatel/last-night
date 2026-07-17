@@ -10,17 +10,58 @@
 		EB228C9F2FE4AE06006875D7 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = EB228C9E2FE4AE06006875D7 /* Kingfisher */; };
 		EB228CA22FE4AE0C006875D7 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA12FE4AE0C006875D7 /* GoogleSignIn */; };
 		EB228CA42FE4AE0C006875D7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EB228CA32FE4AE0C006875D7 /* GoogleSignInSwift */; };
+		EBA1AE3F300A9979003A40A7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBA1AE3E300A9979003A40A7 /* WidgetKit.framework */; };
+		EBA1AE41300A9979003A40A7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBA1AE40300A9979003A40A7 /* SwiftUI.framework */; };
+		EBA1AE4E300A997A003A40A7 /* LastNightWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EBA1AE3C300A9979003A40A7 /* LastNightWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EBA1AE56300A9A75003A40A7 /* GroupActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA1AE55300A9A75003A40A7 /* GroupActivityAttributes.swift */; };
+		EBA1AE59300A9B7B003A40A7 /* GroupActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA1AE55300A9A75003A40A7 /* GroupActivityAttributes.swift */; };
 		EBF0666F2FE8724F00134318 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = EBF0666E2FE8724F00134318 /* FirebaseAuth */; };
 		EBF066712FE8724F00134318 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066702FE8724F00134318 /* FirebaseCore */; };
 		EBF066732FE8724F00134318 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066722FE8724F00134318 /* FirebaseFirestore */; };
 		EBF066752FE8724F00134318 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EBF066742FE8724F00134318 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		EBA1AE4C300A997A003A40A7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EBFBCEDF2F7B055E00855A91 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EBA1AE3B300A9979003A40A7;
+			remoteInfo = LastNightWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EBA1AE4F300A997A003A40A7 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				EBA1AE4E300A997A003A40A7 /* LastNightWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		EBA1AE3C300A9979003A40A7 /* LastNightWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LastNightWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBA1AE3E300A9979003A40A7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		EBA1AE40300A9979003A40A7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		EBA1AE54300A9A1A003A40A7 /* LastNightWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LastNightWidgetsExtension.entitlements; sourceTree = "<group>"; };
+		EBA1AE55300A9A75003A40A7 /* GroupActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupActivityAttributes.swift; sourceTree = "<group>"; };
 		EBFBCEE72F7B055E00855A91 /* LastNight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LastNight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		EBA1AE53300A997A003A40A7 /* Exceptions for "LastNightWidgets" folder in "LastNightWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = EBA1AE3B300A9979003A40A7 /* LastNightWidgetsExtension */;
+		};
 		EBFBCF352F7B170A00855A91 /* Exceptions for "LastNight" folder in "LastNight" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -31,6 +72,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		EBA1AE42300A9979003A40A7 /* LastNightWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EBA1AE53300A997A003A40A7 /* Exceptions for "LastNightWidgets" folder in "LastNightWidgetsExtension" target */,
+			);
+			path = LastNightWidgets;
+			sourceTree = "<group>";
+		};
 		EBFBCEE92F7B055E00855A91 /* LastNight */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -42,6 +91,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		EBA1AE39300A9979003A40A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBA1AE41300A9979003A40A7 /* SwiftUI.framework in Frameworks */,
+				EBA1AE3F300A9979003A40A7 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EBFBCEE42F7B055E00855A91 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -59,10 +117,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EBA1AE3D300A9979003A40A7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				EBA1AE3E300A9979003A40A7 /* WidgetKit.framework */,
+				EBA1AE40300A9979003A40A7 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		EBFBCEDE2F7B055E00855A91 = {
 			isa = PBXGroup;
 			children = (
+				EBA1AE55300A9A75003A40A7 /* GroupActivityAttributes.swift */,
+				EBA1AE54300A9A1A003A40A7 /* LastNightWidgetsExtension.entitlements */,
 				EBFBCEE92F7B055E00855A91 /* LastNight */,
+				EBA1AE42300A9979003A40A7 /* LastNightWidgets */,
+				EBA1AE3D300A9979003A40A7 /* Frameworks */,
 				EBFBCEE82F7B055E00855A91 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				EBFBCEE72F7B055E00855A91 /* LastNight.app */,
+				EBA1AE3C300A9979003A40A7 /* LastNightWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -78,6 +150,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		EBA1AE3B300A9979003A40A7 /* LastNightWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBA1AE52300A997A003A40A7 /* Build configuration list for PBXNativeTarget "LastNightWidgetsExtension" */;
+			buildPhases = (
+				EBA1AE38300A9979003A40A7 /* Sources */,
+				EBA1AE39300A9979003A40A7 /* Frameworks */,
+				EBA1AE3A300A9979003A40A7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				EBA1AE42300A9979003A40A7 /* LastNightWidgets */,
+			);
+			name = LastNightWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = LastNightWidgetsExtension;
+			productReference = EBA1AE3C300A9979003A40A7 /* LastNightWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		EBFBCEE62F7B055E00855A91 /* LastNight */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EBFBCEF22F7B056000855A91 /* Build configuration list for PBXNativeTarget "LastNight" */;
@@ -85,10 +179,12 @@
 				EBFBCEE32F7B055E00855A91 /* Sources */,
 				EBFBCEE42F7B055E00855A91 /* Frameworks */,
 				EBFBCEE52F7B055E00855A91 /* Resources */,
+				EBA1AE4F300A997A003A40A7 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				EBA1AE4D300A997A003A40A7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				EBFBCEE92F7B055E00855A91 /* LastNight */,
@@ -114,9 +210,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					EBA1AE3B300A9979003A40A7 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 					EBFBCEE62F7B055E00855A91 = {
 						CreatedOnToolsVersion = 26.4;
 					};
@@ -142,11 +241,19 @@
 			projectRoot = "";
 			targets = (
 				EBFBCEE62F7B055E00855A91 /* LastNight */,
+				EBA1AE3B300A9979003A40A7 /* LastNightWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		EBA1AE3A300A9979003A40A7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EBFBCEE52F7B055E00855A91 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -157,16 +264,97 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		EBA1AE38300A9979003A40A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBA1AE59300A9B7B003A40A7 /* GroupActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EBFBCEE32F7B055E00855A91 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EBA1AE56300A9A75003A40A7 /* GroupActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		EBA1AE4D300A997A003A40A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EBA1AE3B300A9979003A40A7 /* LastNightWidgetsExtension */;
+			targetProxy = EBA1AE4C300A997A003A40A7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		EBA1AE50300A997A003A40A7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = LastNightWidgetsExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LastNightWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LastNightWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sydneypatel.LastNight.LastNightWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		EBA1AE51300A997A003A40A7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = LastNightWidgetsExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LastNightWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LastNightWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sydneypatel.LastNight.LastNightWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		EBFBCEF02F7B056000855A91 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -303,7 +491,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LastNight/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "last night.";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "\"Last Night uses your contacts to suggest friends who are already on the app.\"";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -343,7 +533,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LastNight/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "last night.";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Last Night uses your camera to capture photos for your group.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "\"Last Night uses your contacts to suggest friends who are already on the app.\"";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -373,6 +565,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		EBA1AE52300A997A003A40A7 /* Build configuration list for PBXNativeTarget "LastNightWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBA1AE50300A997A003A40A7 /* Debug */,
+				EBA1AE51300A997A003A40A7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		EBFBCEE22F7B055E00855A91 /* Build configuration list for PBXProject "LastNight" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

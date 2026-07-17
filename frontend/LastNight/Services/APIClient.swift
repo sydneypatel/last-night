@@ -124,6 +124,14 @@ class APIClient {
         )
     }
     
+    func registerLiveActivityToken(groupId: String, token: String) async throws {
+        let _: EmptyResponse = try await request(
+            path: "/notifications/live-activity-token",
+            method: "POST",
+            body: ["groupId": groupId, "token": token]
+        )
+    }
+    
     // MARK: - Social
     
     func getUser(id: String) async throws -> User {

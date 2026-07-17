@@ -1,3 +1,11 @@
+//
+//  GroupActivityAttributes.swift
+//  LastNight
+//
+//  Created by Sydney Patel on 7/17/26.
+//
+
+
 import ActivityKit
 import Foundation
 

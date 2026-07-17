@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSContactsUsageDescription</key>
-	<string>&quot;Last Night uses your contacts to suggest friends who are already on the app.&quot;</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -14,6 +10,16 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.1062216231030-dda7ajnmiamg38k8cqtg7ge80chvh628</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.sydneypatel.LastNight</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>lastnight</string>
 			</array>
 		</dict>
 	</array>
