@@ -19,9 +19,13 @@ router.post('/upload-url', auth, async (req, res, next) => {
       [groupId, req.user.id]
     );
     if (rows.length === 0) return res.status(403).json({ error: 'Not a member' });
+
     const photoId = uuidv4();
-    const s3Key = `photos/${groupId}/${req.user.id}/${photoId}.jpg`;
+    const isVideo = contentType === 'video/quicktime' || contentType === 'video/mp4';
+    const ext = isVideo ? 'mov' : 'jpg';
+    const s3Key = `photos/${groupId}/${req.user.id}/${photoId}.${ext}`;
     const thumbnailKey = `thumbnails/${groupId}/${req.user.id}/${photoId}.jpg`;
+
     const uploadUrl = await getSignedUrl(
       s3,
       new PutObjectCommand({ Bucket: BUCKET, Key: s3Key, ContentType: contentType }),
@@ -33,10 +37,9 @@ router.post('/upload-url', auth, async (req, res, next) => {
 
 router.post('/confirm', auth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not registered' });
-  const { groupId, s3Key, thumbnailKey, metadata = {} } = req.body;
+  const { groupId, s3Key, thumbnailKey, metadata = {}, mediaType = 'photo', durationSeconds } = req.body;
   if (!groupId || !s3Key || !thumbnailKey) return res.status(400).json({ error: 'groupId, s3Key, and thumbnailKey are required' });
   try {
-    // Check if the group is already unlocked
     const { rows: groupRows } = await pool.query(
       'SELECT unlock_at FROM groups WHERE id = $1',
       [groupId]
@@ -45,12 +48,14 @@ router.post('/confirm', auth, async (req, res, next) => {
     const alreadyUnlocked = group?.unlock_at && new Date(group.unlock_at) <= new Date();
 
     const { rows } = await pool.query(
-      `INSERT INTO photos (group_id, user_id, s3_key, thumbnail_key, metadata, locked, unlocked_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO photos (group_id, user_id, s3_key, thumbnail_key, metadata, locked, unlocked_at, media_type, duration_seconds)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [groupId, req.user.id, s3Key, thumbnailKey, JSON.stringify(metadata),
        alreadyUnlocked ? false : true,
-       alreadyUnlocked ? new Date() : null]
+       alreadyUnlocked ? new Date() : null,
+       mediaType,
+       durationSeconds || null]
     );
     res.status(201).json({ photo: rows[0] });
   } catch (err) { next(err); }

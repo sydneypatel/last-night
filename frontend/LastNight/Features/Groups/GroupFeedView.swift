@@ -1,4 +1,5 @@
 import SwiftUI
+import Photos
 import PhotosUI
 import ActivityKit
 
@@ -31,7 +32,14 @@ struct GroupFeedView: View {
     @State private var showingRenameGroup = false
     @State private var newGroupName = ""
     @State private var showingAddMembers = false
-
+    
+    // saving photos
+    @State private var isSelecting = false
+    @State private var selectedPhotoIds: Set<String> = []
+    @State private var isSavingSelected = false
+    @State private var showSaveToast = false
+    @State private var saveToastMessage = "saved to camera roll!"
+    
     private let columns = [
         GridItem(.flexible(), spacing: 2),
         GridItem(.flexible(), spacing: 2),
@@ -41,6 +49,11 @@ struct GroupFeedView: View {
     private var isUnlocked: Bool {
         guard let unlockAt = currentUnlockAt else { return false }
         return unlockAt <= Date()
+    }
+    
+    private var allUnlockedSelected: Bool {
+        let unlockedIds = Set(photos.filter { !$0.locked }.map { $0.id })
+        return !unlockedIds.isEmpty && unlockedIds.isSubset(of: selectedPhotoIds)
     }
 
     private var unlockLabel: String {
@@ -147,12 +160,24 @@ struct GroupFeedView: View {
                         } else {
                             LazyVGrid(columns: columns, spacing: 2) {
                                 ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
-                                    PhotoGridCell(photo: photo)
-                                        .onTapGesture {
-                                            if !photo.locked {
-                                                selectedPhotoIndex = index
+                                    PhotoGridCell(
+                                        photo: photo,
+                                        isSelecting: isSelecting,
+                                        isSelected: selectedPhotoIds.contains(photo.id)
+                                    )
+                                    .onTapGesture {
+                                        guard !photo.locked else { return }
+                                        if isSelecting {
+                                            if selectedPhotoIds.contains(photo.id) {
+                                                selectedPhotoIds.remove(photo.id)
+                                            } else {
+                                                selectedPhotoIds.insert(photo.id)
                                             }
+                                            print("📸 selectedPhotoIds now:", selectedPhotoIds)
+                                        } else {
+                                            selectedPhotoIndex = index
                                         }
+                                    }
                                 }
                             }
                             .padding(0)
@@ -164,19 +189,54 @@ struct GroupFeedView: View {
                 }
             }
             
-            VStack {
-                Spacer()
-                Button {
-                    showingCamera = true
-                } label: {
-                    Image(systemName: "camera.fill")
-                        .font(.title2)
+            if isSelecting {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Button {
+                            toggleSelectAll()
+                        } label: {
+                            Text(allUnlockedSelected ? "deselect all" : "select all")
+                                .font(.subheadline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(16)
+                        }
+                        .padding(.leading, 8)
+
+                        Spacer()
+
+                        Text(selectedPhotoIds.isEmpty ? "" : "\(selectedPhotoIds.count) selected")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.7))
+
+                        Spacer()
+
+                        Button {
+                            saveSelectedPhotos()
+                        } label: {
+                            if isSavingSelected {
+                                ProgressView().tint(.black)
+                            } else {
+                                Text("save to camera roll")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                        }
                         .foregroundColor(.black)
-                        .frame(width: 64, height: 64)
-                        .background(Color.white)
-                        .clipShape(Circle())
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(selectedPhotoIds.isEmpty ? Color.white.opacity(0.3) : Color.white)
+                        .cornerRadius(16)
+                        .disabled(selectedPhotoIds.isEmpty || isSavingSelected)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(Color.black.opacity(0.85))
                 }
-                .padding(.bottom, 32)
+                .ignoresSafeArea(edges: .bottom)
             }
             
             if isUploadingCover {
@@ -189,49 +249,107 @@ struct GroupFeedView: View {
                         .cornerRadius(12)
                 }
             }
+            
+//            if isSelecting {
+//                VStack {
+//                    Spacer()
+//                    HStack {
+//                        Text(selectedPhotoIds.isEmpty ? "select photos" : "\(selectedPhotoIds.count) selected")
+//                            .font(.subheadline)
+//                            .foregroundColor(.white)
+//                        Spacer()
+//                        Button {
+//                            saveSelectedPhotos()
+//                        } label: {
+//                            if isSavingSelected {
+//                                ProgressView().tint(.black)
+//                            } else {
+//                                Text("save to camera roll")
+//                            }
+//                        }
+//                        .foregroundColor(.black)
+//                        .padding(.horizontal, 20)
+//                        .padding(.vertical, 10)
+//                        .background(selectedPhotoIds.isEmpty ? Color.white.opacity(0.3) : Color.white)
+//                        .cornerRadius(20)
+//                        .disabled(selectedPhotoIds.isEmpty || isSavingSelected)
+//                    }
+//                    .padding(.horizontal, 20)
+//                    .padding(.vertical, 14)
+//                    .background(Color.black.opacity(0.85))
+//                }
+//                .ignoresSafeArea(edges: .bottom)
+//            }
+
+            if showSaveToast {
+                VStack {
+                    Spacer()
+                    Text(saveToastMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.15))
+                        .cornerRadius(20)
+                        .padding(.bottom, 100)
+                }
+                .transition(.opacity)
+            }
         }
         .navigationTitle(currentGroupName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button { showingMembers = true } label: {
-                        Label("members", systemImage: "person.2.fill")
+                if isSelecting {
+                    Button("cancel") {
+                        isSelecting = false
+                        selectedPhotoIds.removeAll()
                     }
-                    Button {
-                        showingAddMembers = true
-                    } label: {
-                        Label("add members", systemImage: "person.badge.plus")
-                    }
-                    Button { showingCoverPhotoSourcePicker = true } label: {
-                        Label("change cover photo", systemImage: "photo")
-                    }
-                    Button {
-                        newGroupName = currentGroupName
-                        showingRenameGroup = true
-                    } label: {
-                        Label("rename group", systemImage: "pencil")
-                    }
-                    if group.role == .owner {
+                    .foregroundColor(.white)
+                } else {
+                    Menu {
+                        Button { isSelecting = true } label: {
+                            Label("select photos", systemImage: "checkmark.circle")
+                        }
+                        Button { showingMembers = true } label: {
+                            Label("members", systemImage: "person.2.fill")
+                        }
                         Button {
-                            showingEditUnlock = true
+                            showingAddMembers = true
                         } label: {
-                            Label("change unlock time", systemImage: "clock")
+                            Label("add members", systemImage: "person.badge.plus")
                         }
-                        Button(role: .destructive) {
-                            showingDeleteConfirm = true
+                        Button { showingCoverPhotoSourcePicker = true } label: {
+                            Label("change cover photo", systemImage: "photo")
+                        }
+                        Button {
+                            newGroupName = currentGroupName
+                            showingRenameGroup = true
                         } label: {
-                            Label("delete group", systemImage: "trash")
+                            Label("rename group", systemImage: "pencil")
                         }
-                    } else {
-                        Button(role: .destructive) {
-                            showingLeaveConfirm = true
-                        } label: {
-                            Label("leave group", systemImage: "rectangle.portrait.and.arrow.right")
+                        if group.role == .owner {
+                            Button {
+                                showingEditUnlock = true
+                            } label: {
+                                Label("change unlock time", systemImage: "clock")
+                            }
+                            Button(role: .destructive) {
+                                showingDeleteConfirm = true
+                            } label: {
+                                Label("delete group", systemImage: "trash")
+                            }
+                        } else {
+                            Button(role: .destructive) {
+                                showingLeaveConfirm = true
+                            } label: {
+                                Label("leave group", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
                         }
+                    } label: {
+                        Image(systemName: "ellipsis")
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
                 }
             }
         }
@@ -326,6 +444,71 @@ struct GroupFeedView: View {
         }
     }
 
+    private func saveSelectedPhotos() {
+        isSavingSelected = true
+        let photosToSave = photos.filter { selectedPhotoIds.contains($0.id) }
+
+        Task {
+            let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+            guard status == .authorized || status == .limited else {
+                await MainActor.run {
+                    isSavingSelected = false
+                    showToast("enable photos access in settings")
+                }
+                return
+            }
+
+            var failures = 0
+            for photo in photosToSave {
+                guard let urlString = photo.url, let imageURL = URL(string: urlString) else {
+                    failures += 1
+                    continue
+                }
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: imageURL)
+                    guard let image = UIImage(data: data) else {
+                        failures += 1
+                        continue
+                    }
+                    try await PHPhotoLibrary.shared().performChanges {
+                        PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    }
+                } catch {
+                    print("Failed to save photo \(photo.id) to camera roll:", error)
+                    failures += 1
+                }
+            }
+
+            await MainActor.run {
+                isSavingSelected = false
+                isSelecting = false
+                selectedPhotoIds.removeAll()
+                if failures > 0 {
+                    showToast("saved \(photosToSave.count - failures) of \(photosToSave.count) photos")
+                } else {
+                    showToast("saved to camera roll!")
+                }
+            }
+        }
+    }
+    
+    private func toggleSelectAll() {
+        let unlockedIds = Set(photos.filter { !$0.locked }.map { $0.id })
+        if allUnlockedSelected {
+            selectedPhotoIds.subtract(unlockedIds)
+        } else {
+            selectedPhotoIds.formUnion(unlockedIds)
+        }
+    }
+
+    private func showToast(_ message: String) {
+        saveToastMessage = message
+        withAnimation { showSaveToast = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { showSaveToast = false }
+        }
+    }
+    
     private func loadPhotos() async {
         do {
             photos = try await APIClient.shared.getPhotos(groupId: group.id)
@@ -409,6 +592,8 @@ struct GroupFeedView: View {
 
 struct PhotoGridCell: View {
     let photo: Photo
+    var isSelecting: Bool = false
+    var isSelected: Bool = false
 
     var body: some View {
         GeometryReader { geo in
@@ -432,20 +617,33 @@ struct PhotoGridCell: View {
                     Image(systemName: "lock.fill")
                         .foregroundColor(.white.opacity(0.6))
                         .font(.title3)
-                } else if photo.mediaType == .video {
+                }
+
+                if isSelecting && !photo.locked {
                     VStack {
-                        Spacer()
                         HStack {
                             Spacer()
-                            Image(systemName: "play.fill")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .padding(6)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                                .padding(6)
+                            ZStack {
+                                Circle()
+                                    .fill(isSelected ? Color.white : Color.black.opacity(0.4))
+                                    .frame(width: 22, height: 22)
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 1.5)
+                                    .frame(width: 22, height: 22)
+                                if isSelected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                            .padding(8)
                         }
+                        Spacer()
                     }
+                }
+
+                if isSelecting && !isSelected && !photo.locked {
+                    Color.black.opacity(0.15)
                 }
             }
         }
@@ -453,7 +651,6 @@ struct PhotoGridCell: View {
         .clipped()
     }
 }
-
 struct EditUnlockTimeView: View {
     let groupId: String
     let onSaved: (Group.UnlockMode, Date?) -> Void
