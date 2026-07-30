@@ -37,6 +37,8 @@ struct CameraView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel = CameraViewModel()
     @StateObject private var orientationObserver = OrientationObserver()
+    @State private var pressTimer: Timer?
+    @State private var isPressing = false
     
     private var flashIconName: String {
         switch viewModel.flashMode {
@@ -144,27 +146,31 @@ struct CameraView: View {
                         .cornerRadius(viewModel.isRecordingVideo ? 8 : 31)
                         .animation(.easeInOut(duration: 0.2), value: viewModel.isRecordingVideo)
                 }
-                .onTapGesture {
-                    if !viewModel.isCapturing {
-                        viewModel.capturePhoto()
-                    }
-                }
-//                .gesture(
-//                    LongPressGesture(minimumDuration: 0.3)
-//                        .onEnded { _ in
-//                            guard !viewModel.isFrontCamera else { return }
-//                            viewModel.startRecording()
-//                        }
-//                        .simultaneously(with: DragGesture(minimumDistance: 0)
-//                            .onEnded { _ in
-//                                if viewModel.isRecordingVideo {
-//                                    viewModel.stopRecording()
-//                                } else if !viewModel.isCapturing {
-//                                    viewModel.capturePhoto()
-//                                }
-//                            }
-//                        )
-//                )
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            print("🟡 onChanged, isPressing:", isPressing, Date())
+                            guard !isPressing else { return }
+                            isPressing = true
+                            pressTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { _ in
+                                print("🟠 timer fired", Date())
+                                guard !viewModel.isFrontCamera else { return }
+                                viewModel.startRecording()
+                            }
+                        }
+                        .onEnded { _ in
+                            print("🔴 onEnded, isRecordingVideo:", viewModel.isRecordingVideo, Date())
+                            isPressing = false
+                            pressTimer?.invalidate()
+                            pressTimer = nil
+
+                            if viewModel.isRecordingVideo {
+                                viewModel.stopRecording()
+                            } else if !viewModel.isCapturing {
+                                viewModel.capturePhoto()
+                            }
+                        }
+                )
                 .padding(.bottom, 48)
             }
 
@@ -184,32 +190,9 @@ struct CameraView: View {
             guard let url else { return }
             uploadVideo(url: url)
         }
-        .onAppear { setupVolumeButtons() }
         .onDisappear {
             viewModel.stopSession()
-            teardownVolumeButtons()
         }
-    }
-
-    private func setupVolumeButtons() {
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setActive(true)
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("AVSystemController_SystemVolumeDidChangeNotification"),
-            object: nil,
-            queue: .main
-        ) { _ in
-            guard !viewModel.isCapturing else { return }
-            viewModel.capturePhoto()
-        }
-    }
-
-    private func teardownVolumeButtons() {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSNotification.Name("AVSystemController_SystemVolumeDidChangeNotification"),
-            object: nil
-        )
     }
 
     private func uploadPhoto(image: UIImage) {
@@ -249,13 +232,17 @@ struct CameraView: View {
                     return
                 }
                 let duration = try await videoDuration(url: url)
+                print("🎥 duration:", duration)
 
                 let videoUploadResponse = try await APIClient.shared.getUploadURL(groupId: groupId, contentType: "video/quicktime")
+                print("🎥 videoUploadResponse.s3Key:", videoUploadResponse.s3Key)
                 try await uploadToS3(data: videoData, url: videoUploadResponse.uploadUrl, contentType: "video/quicktime")
 
                 let thumbUploadResponse = try await APIClient.shared.getUploadURL(groupId: groupId, contentType: "image/jpeg")
+                print("🎥 thumbUploadResponse.s3Key:", thumbUploadResponse.s3Key)
                 try await uploadToS3(data: thumbnailData, url: thumbUploadResponse.uploadUrl, contentType: "image/jpeg")
 
+                print("🎥 about to confirmUpload with mediaType: video")
                 let photo = try await APIClient.shared.confirmUpload(
                     groupId: groupId,
                     s3Key: videoUploadResponse.s3Key,
@@ -263,6 +250,7 @@ struct CameraView: View {
                     mediaType: "video",
                     durationSeconds: duration
                 )
+                print("🎥 confirmUpload succeeded, photo.mediaType:", photo.mediaType)
                 await MainActor.run {
                     onPhotoTaken(photo)
                 }

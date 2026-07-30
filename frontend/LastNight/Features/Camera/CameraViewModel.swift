@@ -44,6 +44,7 @@ class CameraViewModel: NSObject, ObservableObject {
         }
         if session.canAddInput(input) { session.addInput(input) }
         if session.canAddOutput(photoOutput) { session.addOutput(photoOutput) }
+        if session.canAddOutput(movieOutput) { session.addOutput(movieOutput) }
         currentInput = input
         session.commitConfiguration()
         print("📷 device type:", currentInput?.device.deviceType.rawValue ?? "none")
@@ -64,7 +65,6 @@ class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: - Device selection
 
-    /// Prefer a multi-lens virtual device so 0.5x ultra-wide is available via zoom factor.
     private func backCameraDevice() -> AVCaptureDevice? {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
     }
@@ -84,6 +84,17 @@ class CameraViewModel: NSObject, ObservableObject {
         session.beginConfiguration()
         if let current = currentInput { session.removeInput(current) }
         if session.canAddInput(newInput) { session.addInput(newInput) }
+
+        // Video recording is back-camera only (front camera has a known distortion
+        // issue when movieOutput is attached — see earlier fix). Keep movieOutput
+        // attached persistently on back camera so startRecording() is instant with
+        // no mid-press reconfiguration race; detach it when going to front.
+        if position == .front {
+            session.removeOutput(movieOutput)
+        } else if session.canAddOutput(movieOutput) {
+            session.addOutput(movieOutput)
+        }
+
         currentInput = newInput
         session.commitConfiguration()
 
@@ -159,13 +170,9 @@ class CameraViewModel: NSObject, ObservableObject {
     // MARK: - Video capture
 
     func startRecording() {
+        print("🟢 startRecording() called", Date())
         guard !isRecordingVideo else { return }
-
-        session.beginConfiguration()
-        if session.canAddOutput(movieOutput) {
-            session.addOutput(movieOutput)
-        }
-        session.commitConfiguration()
+        guard !isFrontCamera else { return }
 
         if let connection = movieOutput.connection(with: .video) {
             let angle = captureRotationAngle()
@@ -270,10 +277,6 @@ extension CameraViewModel: AVCaptureFileOutputRecordingDelegate {
         Task { @MainActor in
             self.isRecordingVideo = false
             self.recordingProgress = 0
-
-            self.session.beginConfiguration()
-            self.session.removeOutput(self.movieOutput)
-            self.session.commitConfiguration()
 
             if let error {
                 print("Video recording error:", error)

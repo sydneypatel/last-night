@@ -239,6 +239,23 @@ struct GroupFeedView: View {
                 .ignoresSafeArea(edges: .bottom)
             }
             
+            if !isSelecting {
+                VStack {
+                    Spacer()
+                    Button {
+                        showingCamera = true
+                    } label: {
+                        Image(systemName: "camera.fill")
+                            .font(.title2)
+                            .foregroundColor(.black)
+                            .frame(width: 64, height: 64)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                    }
+                    .padding(.bottom, 32)
+                }
+            }
+            
             if isUploadingCover {
                 VStack {
                     ProgressView("updating cover photo…")
