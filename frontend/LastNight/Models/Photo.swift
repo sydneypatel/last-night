@@ -16,6 +16,7 @@ struct Photo: Codable, Identifiable {
     let avatarUrl: String?
     let mediaType: MediaType
     let durationSeconds: Double?
+    let thumbnailUrl: String?
 
     enum MediaType: String, Codable {
         case photo
@@ -35,6 +36,8 @@ struct Photo: Codable, Identifiable {
         case avatarUrl = "avatar_url"
         case mediaType = "media_type"
         case durationSeconds = "duration_seconds"
+        case thumbnailUrl = "thumbnailUrl"
+        
     }
 
     init(from decoder: Decoder) throws {
@@ -53,6 +56,7 @@ struct Photo: Codable, Identifiable {
         displayName = try c.decodeIfPresent(String.self, forKey: .displayName)
         avatarUrl = try c.decodeIfPresent(String.self, forKey: .avatarUrl)
         mediaType = try c.decodeIfPresent(MediaType.self, forKey: .mediaType) ?? .photo
+        thumbnailUrl = try c.decodeIfPresent(String.self, forKey: .thumbnailUrl)
         // Postgres NUMERIC can decode as String depending on driver — handle both
         if let doubleVal = try? c.decodeIfPresent(Double.self, forKey: .durationSeconds) {
             durationSeconds = doubleVal

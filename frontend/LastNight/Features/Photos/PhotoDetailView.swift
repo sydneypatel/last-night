@@ -307,13 +307,24 @@ struct PhotoPageView: View {
     var onSaveToCamera: () -> Void
     var onShare: () -> Void
 
+    @State private var player: AVPlayer?
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             if photo.mediaType == .video, let url = photo.url, let videoURL = URL(string: url) {
-                VideoPlayer(player: AVPlayer(url: videoURL))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if let player {
+                    VideoPlayer(player: player)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .onAppear { player.play() }
+                        .onDisappear { player.pause() }
+                } else {
+                    Color.black
+                        .onAppear {
+                            player = AVPlayer(url: videoURL)
+                        }
+                }
             } else if let url = photo.url, let imageURL = URL(string: url) {
                 AsyncImage(url: imageURL) { image in
                     image

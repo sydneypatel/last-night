@@ -617,7 +617,7 @@ struct PhotoGridCell: View {
             ZStack {
                 Color.white.opacity(0.05)
 
-                if let url = photo.url, let imageURL = URL(string: url) {
+                if let thumbUrl = photo.thumbnailUrl, let imageURL = URL(string: thumbUrl) {
                     AsyncImage(url: imageURL) { image in
                         image
                             .resizable()

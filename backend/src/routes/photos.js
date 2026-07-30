@@ -96,7 +96,12 @@ router.get('/group/:groupId', auth, async (req, res, next) => {
             ? `${CLOUDFRONT}/${photo.s3_key}`
             : await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: photo.s3_key }), { expiresIn: 3600 });
         }
-        return { ...photo, url, s3_key: photo.locked ? null : photo.s3_key };
+
+        const thumbnailUrl = CLOUDFRONT
+          ? `${CLOUDFRONT}/${photo.thumbnail_key}`
+          : await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: photo.thumbnail_key }), { expiresIn: 3600 });
+
+        return { ...photo, url, thumbnailUrl, s3_key: photo.locked ? null : photo.s3_key };
       })
     );
     res.json({ photos: photosWithUrls });
