@@ -97,12 +97,6 @@ Minimal, monochrome, and built for nighttime — a black canvas, clean type, and
 
 ---
 
-## 🤸‍♀️ made by
-
-Built and created by **Sydney** & **Katie** 🌙
-
----
-
 <div align="center">
 
 </div>
