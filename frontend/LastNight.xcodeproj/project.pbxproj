@@ -496,6 +496,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "\"Last Night uses your contacts to suggest friends who are already on the app.\"";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -538,6 +539,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "\"Last Night uses your contacts to suggest friends who are already on the app.\"";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Last Night needs access to save photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Last Night needs access to your photo library.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
