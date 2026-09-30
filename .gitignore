@@ -1,61 +1,41 @@
-# ── Backend ───────────────────────────────────────────
-backend/node_modules/
-backend/.env
-backend/.env.local
+# ── Secrets ───────────────────────────────────────────
+.env
+.env.*
+*.p8
+firebase-service-account*.json
+*service-account*.json
+
+# ── Node ──────────────────────────────────────────────
+node_modules/
+*.log
+
+# ── Lambda build output ───────────────────────────────
+backend/lambda/function.zip
+backend/lambda/package-lock.json
 
 # ── iOS / Xcode ───────────────────────────────────────
 # Build products
 frontend/build/
 frontend/DerivedData/
-frontend/*.xcodeproj/xcuserdata/
-frontend/*.xcworkspace/xcuserdata/
-frontend/*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+frontend/.build/
 
-# CocoaPods (if you add them later)
+# User state
+xcuserdata/
+*.xcuserstate
+frontend/*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+frontend/LastNight.xcodeproj/xcshareddata/
+frontend/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+frontend/*.resolved
+
+# CocoaPods
 frontend/Pods/
 frontend/Podfile.lock
 
-# Swift Package Manager
-frontend/.build/
-frontend/*.resolved   # commit this if you want reproducible builds, skip if not
-
-# Xcode auto-generated
-frontend/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
-*.DS_Store
-.DS_Store
-
 # Archives / exports
 *.ipa
-*.dSYM.zip
 *.dSYM
+*.dSYM.zip
 
-# ── General ───────────────────────────────────────────
+# ── OS ────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-*.log
-
-AuthKey_338KC436TR.p8
-*.p8
-backend/lambda/node_modules/
-frontend/LastNight.xcodeproj/xcshareddata/
-frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
-backend/lambda/function.zip
-backend/lambda/package-lock.json
-backend/lambda/node_modules/
-frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
-frontend/LastNight.xcodeproj/xcuserdata/
-backend/lambda/node_modules/
-frontend/LastNight.xcodeproj/xcuserdata/
-frontend/LastNight.xcodeproj/project.xcworkspace/xcuserdata/
-
-
-# Xcode user state
-*.xcuserstate
-xcuserdata/
-
-# Node modules
-node_modules/
-
-# Xcode user state
-*.xcuserstate
-xcuserdata/

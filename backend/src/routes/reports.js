@@ -37,7 +37,7 @@ router.post('/photo/:id', auth, async (req, res, next) => {
       );
       const tokens = adminTokenRows.map(r => r.token);
       if (tokens.length > 0) {
-        const admin = require('../config/firebaseAdmin');
+        const admin = require('../config/firebase');
         await admin.messaging().sendEachForMulticast({
           tokens,
           notification: {

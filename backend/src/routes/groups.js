@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const auth = require('../middleware/auth');
-const admin = require('../config/firebaseAdmin');
+const admin = require('../config/firebase');
 
 // --- Timezone helpers (numeric, environment-independent) ---
 
